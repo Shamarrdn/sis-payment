@@ -51,6 +51,13 @@ Route::middleware(['auth', 'role:financial_affairs,super_admin,admin', 'scope'])
     Route::get('/payments', [FinancialAffairsController::class, 'payments'])->name('payments'); // التقارير مفلترة
 });
 
+Route::middleware(['auth', 'role:super_admin,admin,financial_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
+    // Service Management
+    Route::get('/services', [AdminController::class, 'services'])->name('services.index');
+    Route::post('/services', [AdminController::class, 'storeService'])->name('services.store');
+    Route::put('/services/{service}', [AdminController::class, 'updateService'])->name('services.update');
+});
+
 Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
 
@@ -59,11 +66,6 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
     Route::post('/employees', [AdminController::class, 'storeEmployee'])->name('employees.store');
     Route::put('/employees/{user}', [AdminController::class, 'updateEmployee'])->name('employees.update');
     Route::delete('/employees/{user}', [AdminController::class, 'deleteEmployee'])->name('employees.delete');
-
-    // Service Management
-    Route::get('/services', [AdminController::class, 'services'])->name('services.index');
-    Route::post('/services', [AdminController::class, 'storeService'])->name('services.store');
-    Route::put('/services/{service}', [AdminController::class, 'updateService'])->name('services.update');
 
     // Audit Log
     Route::get('/audit-log', [AdminController::class, 'auditLog'])->name('audit.index');

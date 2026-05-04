@@ -32,6 +32,9 @@
     <a href="{{ route('affairs.financial.payments') }}" class="{{ request()->routeIs('affairs.financial.payments') ? 'active' : '' }}">
         <i class="bi bi-receipt-cutoff"></i> تقارير المدفوعات
     </a>
+    <a href="{{ route('admin.services.index') }}" class="{{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
+        <i class="bi bi-gear-fill"></i> الخدمات والأسعار
+    </a>
 @endif
 
 {{-- ─── System Admin Sections ─── --}}
@@ -45,9 +48,6 @@
     </a>
     <a href="{{ route('admin.employees.index') }}" class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}">
         <i class="bi bi-person-badge"></i> الموظفين والأذونات
-    </a>
-    <a href="{{ route('admin.services.index') }}" class="{{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
-        <i class="bi bi-gear-fill"></i> الخدمات والأسعار
     </a>
 @endif
 
