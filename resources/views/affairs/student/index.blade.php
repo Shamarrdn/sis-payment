@@ -84,7 +84,7 @@
                     <td>{{ $student->program }}</td>
                     <td>
                         <a href="{{ route('affairs.student.receipts', $student) }}" class="btn btn-sm btn-light rounded-pill border">
-                            <i class="bi bi-receipt text-primary me-1"></i> الإيصالات
+                            <i class="bi bi-archive-fill text-primary me-1"></i> الأرشيف الرقمي
                         </a>
                         @if(auth()->user()->hasPermission('manual_cash_entry'))
                         <button class="btn btn-sm btn-light rounded-pill border" 

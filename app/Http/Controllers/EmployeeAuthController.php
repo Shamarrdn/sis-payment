@@ -31,10 +31,19 @@ class EmployeeAuthController extends Controller
         }
 
         if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'هذا الحساب تم تعطيله. يرجى مراجعة مدير النظام.',
+                ])->onlyInput('email');
+            }
+
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            $role = Auth::user()->role;
+            $role = $user->role;
 
             return match(true) {
                 in_array($role, ['super_admin', 'admin']) => redirect()->route('admin.dashboard'),

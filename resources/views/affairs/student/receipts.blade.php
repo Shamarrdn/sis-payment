@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'إيصالات الطالب - ' . $student->name)
+@section('title', 'الأرشيف الرقمي - ' . $student->name)
 @section('sidebar-title', 'شئون الطلاب')
 @section('sidebar-subtitle', 'لوحة إدارة الطلاب')
 
@@ -21,7 +21,7 @@
     </form>
 @endsection
 
-@section('page-heading', 'إيصالات الطالب')
+@section('page-heading', 'الأرشيف الرقمي للطالب')
 @section('user-name', auth()->user()->name)
 
 @section('content')
@@ -29,8 +29,8 @@
     <a href="{{ route('affairs.student.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill mb-3">
         <i class="bi bi-arrow-right"></i> عودة للقائمة
     </a>
-    <h2 class="page-title">إيصالات الدفع</h2>
-    <p class="page-subtitle">سجل المدفوعات للطالب: <strong>{{ $student->name }}</strong> | ر.ق: {{ $student->national_id }}</p>
+    <h2 class="page-title"><i class="bi bi-archive-fill text-primary me-2"></i>الأرشيف الرقمي للإيصالات</h2>
+    <p class="page-subtitle">أرشيف جميع إيصالات الدفع للطالب: <strong>{{ $student->name }}</strong> | ر.ق: {{ $student->national_id }}</p>
 </div>
 
 {{-- Student Info Card --}}

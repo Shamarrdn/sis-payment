@@ -29,6 +29,7 @@ Route::prefix('student')->group(function () {
         Route::post('/pay/{service}', [StudentPortalController::class, 'pay'])->name('student.pay');
         Route::get('/receipt/{payment}', [StudentPortalController::class, 'receipt'])->name('student.receipt');
         Route::get('/history', [StudentPortalController::class, 'history'])->name('student.history');
+        Route::post('/chat', [\App\Http\Controllers\ChatbotController::class, 'chat'])->name('student.chat');
     });
 });
 
@@ -51,11 +52,12 @@ Route::middleware(['auth', 'role:financial_affairs,super_admin,admin', 'scope'])
     Route::get('/payments', [FinancialAffairsController::class, 'payments'])->name('payments'); // التقارير مفلترة
 });
 
-Route::middleware(['auth', 'role:super_admin,admin,financial_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:super_admin,admin,financial_affairs,student_affairs,graduate_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
     // Service Management
     Route::get('/services', [AdminController::class, 'services'])->name('services.index');
     Route::post('/services', [AdminController::class, 'storeService'])->name('services.store');
     Route::put('/services/{service}', [AdminController::class, 'updateService'])->name('services.update');
+    Route::patch('/services/{service}/toggle', [AdminController::class, 'toggleService'])->name('services.toggle');
 });
 
 Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')->name('admin.')->group(function () {
@@ -66,6 +68,7 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
     Route::post('/employees', [AdminController::class, 'storeEmployee'])->name('employees.store');
     Route::put('/employees/{user}', [AdminController::class, 'updateEmployee'])->name('employees.update');
     Route::delete('/employees/{user}', [AdminController::class, 'deleteEmployee'])->name('employees.delete');
+    Route::patch('/employees/{user}/toggle', [AdminController::class, 'toggleEmployee'])->name('employees.toggle');
 
     // Audit Log
     Route::get('/audit-log', [AdminController::class, 'auditLog'])->name('audit.index');

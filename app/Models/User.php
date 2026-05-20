@@ -17,6 +17,7 @@ class User extends Authenticatable
         'password',
         'role',
         'permissions',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -59,5 +60,13 @@ class User extends Authenticatable
             'manage_settings'   => 'إدارة إعدادات النظام',
             'view_audit_log'    => 'الاطلاع على سجل المراجعة',
         ];
+    }
+
+    /**
+     * Get the admin assignment / scope for this user.
+     */
+    public function assignment()
+    {
+        return $this->hasOne(AdminAssignment::class);
     }
 }

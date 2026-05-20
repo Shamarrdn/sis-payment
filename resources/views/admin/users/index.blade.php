@@ -44,6 +44,7 @@
                         <th class="ps-4">الموظف</th>
                         <th>البريد الإلكتروني</th>
                         <th>الدور الوظيفي</th>
+                        <th>الحالة</th>
                         <th>نطاق العمل (Scope)</th>
                         <th>الصلاحيات</th>
                         <th>تاريخ الانضمام</th>
@@ -69,6 +70,13 @@
                                   style="background:{{ $r['bg'] }};color:{{ $r['color'] }};border:1px solid rgba(0,0,0,0.08);">
                                 {{ $r['label'] }}
                             </span>
+                        </td>
+                        <td>
+                            @if($employee->is_active)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">نشط</span>
+                            @else
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3">معطل</span>
+                            @endif
                         </td>
                         <td>
                             @if($employee->role === 'super_admin')
@@ -116,6 +124,17 @@
                                         data-bs-toggle="modal" data-bs-target="#scopeModal{{ $employee->id }}">
                                     <i class="bi bi-geo-alt text-info me-1"></i> النطاق
                                 </button>
+                                <form action="{{ route('admin.employees.toggle', $employee) }}" method="POST" class="d-inline">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" class="btn btn-sm btn-light rounded-pill px-3 border"
+                                            onclick="return confirm('هل أنت متأكد من تغيير حالة هذا الحساب؟')">
+                                        @if($employee->is_active)
+                                            <i class="bi bi-pause-circle text-warning"></i> تعطيل
+                                        @else
+                                            <i class="bi bi-play-circle text-success"></i> تفعيل
+                                        @endif
+                                    </button>
+                                </form>
                                 @endif
                                 @if($employee->role !== 'super_admin')
                                 <form action="{{ route('admin.employees.delete', $employee) }}" method="POST" class="d-inline">
@@ -129,8 +148,14 @@
                             </div>
                         </td>
                     </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-                    {{-- Edit Modal --}}
+    @foreach($employees as $employee)
+        {{-- Edit Modal --}}
                     <div class="modal fade" id="editEmployeeModal{{ $employee->id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <form action="{{ route('admin.employees.update', $employee) }}" method="POST" class="modal-content">
@@ -263,12 +288,8 @@
                             @endif
                         </div>
                     </div>
-                    @endif
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
+        @endif
+    @endforeach
 
     <script>
     const scopesData = @json($faculties->mapWithKeys(fn($f) => [$f->id => $f->activeDepartments->map(fn($d) => ['id' => $d->id, 'name' => $d->name])]));

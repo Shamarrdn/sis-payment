@@ -123,9 +123,28 @@ class AdminController extends Controller
 
     public function deleteEmployee(User $user)
     {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => 'لا يمكنك حذف حسابك الخاص.']);
+        }
         AuditLoggerService::log('Delete Employee', $user, $user->only('name', 'email', 'role'));
         $user->delete(); // Soft delete
         return back()->with('success', 'تم حذف الموظف (سيظل محفوظاً في الأرشيف).');
+    }
+
+    public function toggleEmployee(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => 'لا يمكنك تعطيل حسابك الخاص.']);
+        }
+        
+        $oldState = $user->is_active;
+        $user->update(['is_active' => !$oldState]);
+        
+        $actionName = !$oldState ? 'Activate Employee' : 'Deactivate Employee';
+        AuditLoggerService::log($actionName, $user, ['is_active' => $oldState], ['is_active' => !$oldState]);
+        
+        $msg = !$oldState ? 'تم تفعيل حساب الموظف بنجاح.' : 'تم تعطيل حساب الموظف. لن يتمكن من تسجيل الدخول.';
+        return back()->with('success', $msg);
     }
 
     // ─── Services ─────────────────────────────────────────────────────
@@ -134,13 +153,21 @@ class AdminController extends Controller
         $user = auth()->user();
         $query = Service::query();
         
-        if ($user->role !== 'super_admin') {
+        if ($user->role !== 'super_admin' && $user->role !== 'financial_affairs') {
             $facultyId = $user->assignment?->faculty_id;
             if ($facultyId) {
                 $query->where(function($q) use ($facultyId) {
                     $q->where('faculty_id', $facultyId)->orWhereNull('faculty_id');
                 });
             }
+        }
+
+        if ($user->role === 'student_affairs') {
+            $query->where(function($q) {
+                $q->where('applicable_to', '!=', 'Graduate')->orWhereNull('applicable_to');
+            });
+        } elseif ($user->role === 'graduate_affairs') {
+            $query->where('applicable_to', 'Graduate');
         }
 
         $services = $query->get();
@@ -150,6 +177,10 @@ class AdminController extends Controller
 
     public function storeService(Request $request)
     {
+        if (!in_array(auth()->user()->role, ['super_admin', 'financial_affairs'])) {
+            abort(403, 'غير مصرح لك بإنشاء أو تعديل تفاصيل الخدمات. يمكنك فقط إيقاف أو تفعيل الخدمة.');
+        }
+
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'amount'   => 'required|numeric|min:0',
@@ -169,6 +200,10 @@ class AdminController extends Controller
 
     public function updateService(Request $request, Service $service)
     {
+        if (!in_array(auth()->user()->role, ['super_admin', 'financial_affairs'])) {
+            abort(403, 'غير مصرح لك بإنشاء أو تعديل تفاصيل الخدمات. يمكنك فقط إيقاف أو تفعيل الخدمة.');
+        }
+
         $validated = $request->validate([
             'name'   => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
@@ -190,6 +225,17 @@ class AdminController extends Controller
 
         AuditLoggerService::log('Update Service', $service, $old, $service->only('name', 'type', 'amount', 'is_active', 'faculty_id', 'applicable_to'));
         return back()->with('success', 'تم تحديث الخدمة بنجاح.');
+    }
+
+    public function toggleService(Request $request, Service $service)
+    {
+        $oldState = $service->is_active;
+        $service->update(['is_active' => !$oldState]);
+        
+        $actionName = !$oldState ? 'Activate Service' : 'Pause Service';
+        AuditLoggerService::log($actionName, $service, ['is_active' => $oldState], ['is_active' => !$oldState]);
+        
+        return back()->with('success', 'تم تغيير حالة الخدمة (تفعيل/إيقاف) بنجاح.');
     }
 
     // ─── Refund Workflow ───────────────────────────────────────────────

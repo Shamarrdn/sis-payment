@@ -90,6 +90,7 @@ class StudentAffairsController extends Controller
         rewind($handle);
 
         $imported  = 0;
+        $updated   = 0;
         $skipped   = 0;
         $errors    = [];
         $rowNumber = 0;
@@ -152,47 +153,62 @@ class StudentAffairsController extends Controller
                 continue;
             }
 
-            // ── Duplicate check ─────────────────────────────────────────
-            if (Student::where('national_id', $national_id)->exists()) {
-                $errors[] = "صف {$rowNumber}: الرقم القومي [{$national_id}] مكرر — تم التخطي.";
-                $skipped++;
-                continue;
-            }
-            if (Student::where('reference_number', $reference_number)->exists()) {
-                $errors[] = "صف {$rowNumber}: الرقم المرجعي [{$reference_number}] مكرر — تم التخطي.";
-                $skipped++;
-                continue;
-            }
+            // ── Upsert Logic (Update or Create) ─────────────────────────
+            $student = Student::where('national_id', $national_id)->first();
 
-            Student::create([
-                'name'             => $name,
-                'national_id'      => $national_id,
-                'reference_number' => $reference_number,
-                'academic_year'    => $academic_year,
-                'program'          => $program,
-                'phone'            => $phone ?: null,
-                'user_category'    => $user_category ?: 'Student',
-                'special_category' => $special_category ?: null,
-                'faculty_id'       => $faculty_id,
-                'department_id'    => $department_id,
-            ]);
-            $imported++;
+            if ($student) {
+                // Update existing student (Promotion / Adjustment)
+                $student->update([
+                    'academic_year'    => $academic_year,
+                    'program'          => $program,
+                    'user_category'    => $user_category ?: 'Student',
+                    'special_category' => $special_category ?: null,
+                    'faculty_id'       => $faculty_id,
+                    'department_id'    => $department_id,
+                    // Note: Name, Phone, and Reference Number aren't aggressively overridden 
+                    // unless you want them to be. Academic fields are the priority.
+                ]);
+                $updated++;
+            } else {
+                // Check reference number uniqueness for NEW students only
+                if (Student::where('reference_number', $reference_number)->exists()) {
+                    $errors[] = "صف {$rowNumber}: الرقم المرجعي [{$reference_number}] مكرر لطالب آخر — تم التخطي.";
+                    $skipped++;
+                    continue;
+                }
+
+                Student::create([
+                    'name'             => $name,
+                    'national_id'      => $national_id,
+                    'reference_number' => $reference_number,
+                    'academic_year'    => $academic_year,
+                    'program'          => $program,
+                    'phone'            => $phone ?: null,
+                    'user_category'    => $user_category ?: 'Student',
+                    'special_category' => $special_category ?: null,
+                    'faculty_id'       => $faculty_id,
+                    'department_id'    => $department_id,
+                ]);
+                $imported++;
+            }
         }
         fclose($handle);
 
         AuditLoggerService::log('Import Students CSV', null, null, [
             'imported' => $imported,
+            'updated'  => $updated,
             'skipped'  => $skipped,
             'errors'   => count($errors),
         ]);
 
         session(['import_report' => [
             'imported' => $imported,
+            'updated'  => $updated,
             'skipped'  => $skipped,
             'errors'   => $errors,
         ]]);
 
-        $msg = "تم استيراد {$imported} طالب بنجاح. تم تخطي {$skipped} صفوف.";
+        $msg = "تم استيراد {$imported} طالب جديد، وتحديث/ترقية بيانات {$updated} طالب بنجاح. تم تخطي {$skipped} صفوف.";
         if (!empty($errors)) {
             $msg .= ' راجع تقرير الاستيراد أدناه.';
         }

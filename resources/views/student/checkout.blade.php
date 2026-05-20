@@ -1,37 +1,43 @@
 @extends('layouts.auth')
 
-@section('title', 'تأكيد الدفع - ' . $service->name)
-@section('hero-subtitle', 'سداد الخدمات الجامعية')
+@section('title', 'مراجعة واعتماد الرسوم - ' . $service->name)
+@section('hero-subtitle', 'يرجى مراجعة تفاصيل الرسوم قبل الانتقال لبوابة الدفع الإلكترونية')
 
 @section('content')
-<div class="auth-card">
-    <div class="card-header-uni">
-        <i class="bi bi-credit-card-fill" style="font-size:1.4rem;color:var(--accent)"></i>
-        تأكيد عملية الدفع الألكتروني
+<div class="auth-card" style="border-top: 4px solid var(--primary);">
+    <div class="card-header-uni" style="border-bottom: 1px solid #e5eaf2; padding-bottom: 15px; margin-bottom: 20px;">
+        <i class="bi bi-file-earmark-text" style="font-size:1.4rem;color:var(--primary)"></i>
+        ملخص تفاصيل الرسوم
     </div>
     <div class="card-body">
-        <div class="rounded-3 p-3 mb-4" style="background:#f7f9fc;border:1px solid #e0e8f4;">
-            <div class="d-flex justify-content-between align-items-start">
+        <div class="rounded-3 p-4 mb-4" style="background:#fff; border:1px solid #e2e8f0;">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
                 <div>
-                    <div class="text-muted mb-1" style="font-size:0.82rem;">الخدمة المطلوبة</div>
-                    <div class="fw-bold" style="color:#1a2d5a;font-size:1rem;">{{ $service->name }}</div>
-                    <span class="badge rounded-pill mt-1" style="background:#e8eef6;color:#1a2d5a;">{{ $service->category ?? $service->type }}</span>
+                    <div class="text-muted fw-bold mb-1" style="font-size:0.8rem; text-transform:uppercase;">الخدمة المطلوبة</div>
+                    <div class="fw-bold" style="color:var(--primary);font-size:1.1rem;">{{ $service->name }}</div>
                 </div>
                 <div class="text-end">
-                    <div class="text-muted mb-1" style="font-size:0.82rem;">المبلغ للوحدة</div>
-                    <div class="fw-800" style="font-size:1.6rem;font-weight:800;color:#2e7d32;"><span id="unit-price">{{ number_format($service->amount) }}</span> ج.م</div>
+                    <span class="badge rounded-pill bg-light text-dark border px-3 py-2">{{ $service->category ?? $service->type }}</span>
                 </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted fw-bold" style="font-size:0.8rem; text-transform:uppercase;">القيمة المقررة للوحدة</div>
+                <div class="fw-800" style="font-size:1.4rem;font-weight:800;color:#10b981;"><span id="unit-price">{{ number_format($service->amount) }}</span> ج.م</div>
             </div>
         </div>
 
-        <div class="mb-4 d-flex gap-3">
-            <div class="flex-grow-1 rounded-3 p-3 text-center" style="background:#f7f9fc;border:1px solid #e0e8f4;">
-                <div class="text-muted mb-1" style="font-size:0.78rem;">الطالب</div>
-                <div class="fw-bold" style="font-size:0.95rem;">{{ auth()->guard('student')->user()->name }}</div>
+        <div class="mb-4 row g-3">
+            <div class="col-6">
+                <div class="rounded-3 p-3 h-100" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <div class="text-muted mb-1" style="font-size:0.75rem; font-weight:600;">اسم الطالب</div>
+                    <div class="fw-bold text-dark" style="font-size:0.9rem;">{{ auth()->guard('student')->user()->name }}</div>
+                </div>
             </div>
-            <div class="flex-grow-1 rounded-3 p-3 text-center" style="background:#f7f9fc;border:1px solid #e0e8f4;">
-                <div class="text-muted mb-1" style="font-size:0.78rem;">الرقم القومي</div>
-                <div class="fw-bold" style="font-size:0.95rem;">{{ auth()->guard('student')->user()->national_id }}</div>
+            <div class="col-6">
+                <div class="rounded-3 p-3 h-100" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <div class="text-muted mb-1" style="font-size:0.75rem; font-weight:600;">الرقم القومي</div>
+                    <div class="fw-bold text-dark font-monospace" style="font-size:0.9rem;">{{ auth()->guard('student')->user()->national_id }}</div>
+                </div>
             </div>
         </div>
 
@@ -82,13 +88,13 @@
                 </div>
             @endif
 
-            <div class="alert alert-info d-flex justify-content-between my-4">
-                <span class="fw-bold">الإجمالي المطلوب:</span>
-                <span class="fw-bold fs-5"><span id="total-price">{{ number_format($service->amount) }}</span> ج.م</span>
+            <div class="alert mt-4 d-flex justify-content-between align-items-center" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #065f46; border-radius: 12px; padding: 20px;">
+                <span class="fw-bold" style="font-size: 1.1rem;">إجمالي المستحق للسداد:</span>
+                <span class="fw-bold fs-4"><span id="total-price">{{ number_format($service->amount) }}</span> ج.م</span>
             </div>
 
-            <button type="submit" class="btn-signin" style="background:#2e7d32;">
-                <i class="bi bi-credit-card me-2"></i> تأكيد الدفع الآن
+            <button type="submit" class="btn btn-primary w-100 py-3 mt-2 rounded-3 fw-bold" style="font-size: 1.1rem;">
+                <i class="bi bi-shield-lock me-2"></i> الانتقال لبوابة الدفع (E-finance)
             </button>
         </form>
 

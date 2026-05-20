@@ -24,9 +24,9 @@ class StudentPortalController extends Controller
     private function getTuitionServices(): array
     {
         return [
-            'full'  => Service::where('name', 'like', '%دفع كامل%')->first(),
-            'inst1' => Service::where('name', 'like', '%القسط الأول%')->first(),
-            'inst2' => Service::where('name', 'like', '%القسط الثاني%')->first(),
+            'full'  => Service::where('name', 'like', '%دفع كامل%')->where('is_active', true)->first(),
+            'inst1' => Service::where('name', 'like', '%القسط الأول%')->where('is_active', true)->first(),
+            'inst2' => Service::where('name', 'like', '%القسط الثاني%')->where('is_active', true)->first(),
         ];
     }
 
@@ -110,7 +110,7 @@ class StudentPortalController extends Controller
         $tuition  = $this->getTuitionServices();
 
         $mostUsedIds = Payment::where('status', 'paid')
-            ->whereHas('service', fn($q) => $q->whereNotIn('type', ['مصاريف دراسية']))
+            ->whereHas('service', fn($q) => $q->whereNotIn('type', ['مصاريف دراسية', 'مصروفات دراسية']))
             ->select('service_id', DB::raw('count(*) as total'))
             ->groupBy('service_id')
             ->orderByDesc('total')
@@ -118,7 +118,7 @@ class StudentPortalController extends Controller
             ->pluck('service_id');
 
         $mostUsed = Service::whereIn('id', $mostUsedIds)->get();
-        $services = Service::whereNotIn('type', ['مصاريف دراسية'])->where('is_active', true)->get()->groupBy('type');
+        $services = Service::whereNotIn('type', ['مصاريف دراسية', 'مصروفات دراسية'])->where('is_active', true)->get()->groupBy('type');
 
         $paidFull  = $this->hasPaid($student->id, $tuition['full']);
         $paidInst1 = $this->hasPaid($student->id, $tuition['inst1']);
@@ -135,10 +135,20 @@ class StudentPortalController extends Controller
                 'bg' => '#e0f2f1',
                 'color' => '#00695c'
             ],
+            'شئون طلبة' => [
+                'icon' => 'bi-person-badge-fill',
+                'bg' => '#e0f2f1',
+                'color' => '#00695c'
+            ],
             'التماسات' => [
                 'icon' => 'bi-file-earmark-text-fill',
                 'bg' => '#fff3e0',
                 'color' => '#e65100'
+            ],
+            'خريجين' => [
+                'icon' => 'bi-mortarboard-fill',
+                'bg' => '#fce4ec',
+                'color' => '#c2185b'
             ],
             'سمر كورس' => [
                 'icon' => 'bi-sun-fill',
@@ -239,7 +249,7 @@ class StudentPortalController extends Controller
         );
 
         if (isset($outcome['duplicate'])) {
-            return back()->withErrors(['choice' => 'يبدو أن عملية مماثلة تمت معالجتها مسبقاً في نفس الدقيقة. يرجى مراجعة سجل المدفوعات.']);
+            return back()->withErrors(['choice' => 'يبدو أن عملية مماثلة تمت معالجتها مسبقاً في نفس الدقيقة. يرجى مراجعة الأرشيف الرقمي.']);
         }
 
         if ($outcome['status'] === 'paid') {
@@ -298,7 +308,7 @@ class StudentPortalController extends Controller
         );
 
         if (isset($outcome['duplicate'])) {
-            return back()->with('error', 'تم اكتشاف طلب مكرر. يرجى مراجعة سجل المدفوعات قبل إعادة المحاولة.');
+            return back()->with('error', 'تم اكتشاف طلب مكرر. يرجى مراجعة الأرشيف الرقمي قبل إعادة المحاولة.');
         }
 
         if ($outcome['status'] === 'paid') {

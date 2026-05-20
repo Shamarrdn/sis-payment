@@ -12,9 +12,11 @@
             <h2 class="page-title">إدارة الخدمات والرسوم</h2>
             <p class="page-subtitle mb-0">تحكم كامل في مسميات الخدمات والأسعار الرسمية للجامعة</p>
         </div>
+        @if(in_array(auth()->user()->role, ['super_admin', 'financial_affairs']))
         <button class="btn-primary-uni" data-bs-toggle="modal" data-bs-target="#addServiceModal">
             <i class="bi bi-plus-lg"></i> إضافة خدمة جديدة
         </button>
+        @endif
     </div>
 
     {{-- Category Filters --}}
@@ -28,9 +30,12 @@
                 $iconMap = [
                     'خدمات عامة' => ['icon' => 'bi-collection-fill', 'color' => '#3b82f6'],
                     'شئون طلاب' => ['icon' => 'bi-person-badge-fill', 'color' => '#8b5cf6'],
+                    'شئون طلبة' => ['icon' => 'bi-person-badge-fill', 'color' => '#8b5cf6'],
                     'التماسات' => ['icon' => 'bi-file-earmark-text-fill', 'color' => '#f59e0b'],
                     'سمر كورس' => ['icon' => 'bi-sun-fill', 'color' => '#ef4444'],
-                    'مصاريف دراسية' => ['icon' => 'bi-cash-stack', 'color' => '#10b981']
+                    'مصاريف دراسية' => ['icon' => 'bi-cash-stack', 'color' => '#10b981'],
+                    'مصروفات دراسية' => ['icon' => 'bi-cash-stack', 'color' => '#10b981'],
+                    'خريجين' => ['icon' => 'bi-mortarboard-fill', 'color' => '#ec4899']
                 ];
             @endphp
             @foreach($types as $type)
@@ -85,6 +90,7 @@
                                           style="background: var(--accent-soft); color: var(--accent); font-weight: 800; border: 1px solid rgba(212, 175, 55, 0.3);">
                                         {{ $service->type }}
                                     </span>
+                                    @if(in_array(auth()->user()->role, ['super_admin', 'financial_affairs']))
                                     <div class="dropdown">
                                         <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
                                             <i class="bi bi-three-dots-vertical"></i>
@@ -97,9 +103,15 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    @endif
                                 </div>
                                 
-                                <h5 class="fw-bold mb-2" style="color: var(--primary); line-height: 1.4;">{{ $service->name }}</h5>
+                                <h5 class="fw-bold mb-2" style="color: var(--primary); line-height: 1.4;">
+                                    {{ $service->name }}
+                                    @if(!$service->is_active)
+                                        <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.7rem;">متوقفة</span>
+                                    @endif
+                                </h5>
                                 
                                 <div class="d-flex flex-wrap gap-1 mb-3">
                                     @if($service->faculty)
@@ -121,11 +133,23 @@
                                             <span class="small fw-normal">ج.م</span>
                                         </div>
                                     </div>
-                                    <button class="btn btn-sm px-3 rounded-pill" 
-                                            style="background: #f8fafc; border: 1.5px solid #e2e8f0; font-weight: 700; color: var(--primary);"
-                                            data-bs-toggle="modal" data-bs-target="#editServiceModal{{ $service->id }}">
-                                        تعديل السعر
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <form action="{{ route('admin.services.toggle', $service->id) }}" method="POST" class="d-inline">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="btn btn-sm px-3 rounded-pill {{ $service->is_active ? 'btn-outline-danger' : 'btn-outline-success' }}" style="font-weight: 700;">
+                                                <i class="bi {{ $service->is_active ? 'bi-pause-circle-fill' : 'bi-play-circle-fill' }} me-1"></i>
+                                                {{ $service->is_active ? 'إيقاف' : 'تفعيل' }}
+                                            </button>
+                                        </form>
+                                        
+                                        @if(in_array(auth()->user()->role, ['super_admin', 'financial_affairs']))
+                                        <button class="btn btn-sm px-3 rounded-pill" 
+                                                style="background: #f8fafc; border: 1.5px solid #e2e8f0; font-weight: 700; color: var(--primary);"
+                                                data-bs-toggle="modal" data-bs-target="#editServiceModal{{ $service->id }}">
+                                            تعديل
+                                        </button>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
@@ -147,10 +171,11 @@
                                                 <label class="form-label">التصنيف</label>
                                                 <select name="type" class="form-select form-select-lg" required>
                                                     <option value="خدمات عامة" {{ $service->type == 'خدمات عامة' ? 'selected' : '' }}>خدمات عامة</option>
-                                                    <option value="شئون طلاب" {{ $service->type == 'شئون طلاب' ? 'selected' : '' }}>شئون طلاب</option>
+                                                    <option value="شئون طلبة" {{ in_array($service->type, ['شئون طلاب', 'شئون طلبة']) ? 'selected' : '' }}>شئون طلبة</option>
+                                                    <option value="خريجين" {{ $service->type == 'خريجين' ? 'selected' : '' }}>خريجين</option>
                                                     <option value="التماسات" {{ $service->type == 'التماسات' ? 'selected' : '' }}>التماسات</option>
                                                     <option value="سمر كورس" {{ $service->type == 'سمر كورس' ? 'selected' : '' }}>سمر كورس</option>
-                                                    <option value="مصاريف دراسية" {{ $service->type == 'مصاريف دراسية' ? 'selected' : '' }}>مصاريف دراسية</option>
+                                                    <option value="مصروفات دراسية" {{ in_array($service->type, ['مصاريف دراسية', 'مصروفات دراسية']) ? 'selected' : '' }}>مصروفات دراسية</option>
                                                 </select>
                                             </div>
                                             <div class="row g-3 mb-4">
@@ -226,10 +251,11 @@
                         <label class="form-label">التصنيف</label>
                         <select name="type" class="form-select form-select-lg" required>
                             <option value="خدمات عامة" selected>خدمات عامة</option>
-                            <option value="شئون طلاب">شئون طلاب</option>
+                            <option value="شئون طلبة">شئون طلبة</option>
+                            <option value="خريجين">خريجين</option>
                             <option value="التماسات">التماسات</option>
                             <option value="سمر كورس">سمر كورس</option>
-                            <option value="مصاريف دراسية">مصاريف دراسية</option>
+                            <option value="مصروفات دراسية">مصروفات دراسية</option>
                         </select>
                     </div>
                     <div class="row g-3 mb-4">

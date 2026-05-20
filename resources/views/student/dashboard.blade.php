@@ -78,7 +78,7 @@
             font-weight: 700; text-decoration: none; border-top: 1px solid #e8eef6;
             transition: all 0.2s;
         }
-        .service-card .btn-pay:hover { background: #233872; color: #fff; }
+        .service-card .btn-pay:hover { background: #eef2f6 !important; color: var(--primary) !important; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -103,7 +103,7 @@
             <i class="bi bi-grid-fill"></i> الخدمات المتاحة
         </a>
         <a href="{{ route('student.history') }}" class="{{ request()->routeIs('student.history') ? 'active' : '' }}">
-            <i class="bi bi-clock-history"></i> سجل المدفوعات
+            <i class="bi bi-archive-fill"></i> الأرشيف الرقمي
         </a>
     </nav>
     <div class="sidebar-footer">
@@ -150,7 +150,7 @@
         @if(isset($unpaidCount) && $unpaidCount > 0)
             <div class="alert alert-warning rounded-3 mb-4 d-flex justify-content-between align-items-center">
                 <div><i class="bi bi-exclamation-triangle-fill me-2"></i> لديك <strong>{{ $unpaidCount }}</strong> عملية دفع قيد الانتظار لم تكتمل بعد.</div>
-                <a href="{{ route('student.history') }}" class="btn btn-sm btn-outline-dark">عرض السجل</a>
+                <a href="{{ route('student.history') }}" class="btn btn-sm btn-outline-dark">عرض الأرشيف</a>
             </div>
         @endif
 
@@ -193,49 +193,49 @@
         </div>
 
         <div class="mb-4">
-            <h2 style="font-size:1.6rem;font-weight:800;color:#1a2d5a;">الخدمات المتاحة للدفع</h2>
-            <p class="text-muted">اختر الخدمة المطلوبة وادفع بسهولة عبر بوابة E-finance</p>
+            <h2 style="font-size:1.6rem;font-weight:800;color:#1a2d5a;">الخدمات والرسوم الإدارية</h2>
+            <p class="text-muted">اختر الخدمة المطلوبة للمتابعة والسداد عبر بوابة الجامعة الإلكترونية</p>
         </div>
 
         {{-- ─── المصاريف الدراسية (بطاقة خاصة) ─── --}}
         <div class="mb-5">
             <h5 class="fw-bold mb-3" style="color:#1a2d5a;">
-                <i class="bi bi-cash-stack me-2" style="color:#7b1fa2;"></i>المصاريف الدراسية
+                <i class="bi bi-bank me-2"></i>المصاريف الدراسية
             </h5>
-            <div class="rounded-4 p-4" style="background:linear-gradient(135deg,#4a148c,#7b1fa2);color:#fff;box-shadow:0 8px 30px rgba(74,20,140,0.3);">
+            <div class="rounded-4 p-4" style="background:#fff;border:2px solid #e5eaf2;color:var(--primary);box-shadow:0 4px 20px rgba(0,0,0,0.04);position:relative;overflow:hidden;">
+                <!-- Decorative element -->
+                <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:var(--accent);"></div>
+                
                 <div class="row align-items-center g-4">
                     <div class="col-md-6">
-                        <div style="font-size:0.82rem;opacity:0.75;margin-bottom:4px;">إجمالي المصاريف الدراسية</div>
-                        <div style="font-size:2.4rem;font-weight:800;">{{ number_format($resolution['total']) }} <small style="font-size:1.1rem;">ج.م</small></div>
-                        <div style="font-size:0.78rem;opacity:0.65;margin-top:2px;">
-                            القسط الأول: {{ number_format($resolution['inst1_amount']) }} ج.م
+                        <div style="font-size:0.85rem;color:#64748b;margin-bottom:4px;font-weight:600;">إجمالي المصاريف الدراسية المقررة</div>
+                        <div style="font-size:2.4rem;font-weight:800;color:var(--primary);">{{ number_format($resolution['total']) }} <small style="font-size:1.1rem;">ج.م</small></div>
+                        <div style="font-size:0.85rem;color:#64748b;margin-top:2px;">
+                            القسط الأول: <span class="fw-bold text-dark">{{ number_format($resolution['inst1_amount']) }} ج.م</span>
                             &nbsp;|&nbsp;
-                            القسط الثاني: {{ number_format($resolution['inst2_amount']) }} ج.م
+                            القسط الثاني: <span class="fw-bold text-dark">{{ number_format($resolution['inst2_amount']) }} ج.م</span>
                         </div>
                         <div class="d-flex gap-2 mt-3 flex-wrap">
                             @if($paidFull)
-                                <span class="badge rounded-pill px-3 py-2" style="background:#4caf50;font-size:0.85rem;"><i class="bi bi-check-circle-fill me-1"></i>مدفوعة بالكامل</span>
+                                <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-check-circle-fill me-1"></i> مسددة بالكامل</span>
                             @elseif($paidInst1 && $paidInst2)
-                                <span class="badge rounded-pill px-3 py-2" style="background:#4caf50;font-size:0.85rem;"><i class="bi bi-check-circle-fill me-1"></i>مدفوعة (قسطين)</span>
+                                <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-check-circle-fill me-1"></i> مسددة (قسطين)</span>
                             @elseif($paidInst1)
-                                <span class="badge rounded-pill px-3 py-2" style="background:#4caf50;font-size:0.85rem;"><i class="bi bi-check-circle-fill me-1"></i>القسط الأول ✓</span>
-                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,0.2);font-size:0.85rem;">
-                                    <i class="bi bi-clock me-1"></i>القسط الثاني متبقي: {{ number_format($resolution['inst2_amount']) }} ج.م
-                                </span>
+                                <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-check-circle-fill me-1"></i> تم سداد القسط الأول</span>
+                                <span class="badge rounded-pill px-3 py-2 bg-light text-dark border"><i class="bi bi-clock me-1"></i> القسط الثاني متبقي: {{ number_format($resolution['inst2_amount']) }} ج.م</span>
                             @else
-                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,0.15);font-size:0.85rem;"><i class="bi bi-hourglass me-1"></i>لم يُسدد بعد</span>
+                                <span class="badge rounded-pill px-3 py-2 bg-light text-dark border"><i class="bi bi-hourglass me-1"></i> لم يُسدد بعد</span>
                             @endif
                         </div>
                     </div>
                     <div class="col-md-6 d-flex justify-content-end gap-3 flex-wrap">
                         @if(!$paidFull && !($paidInst1 && $paidInst2))
                             <a href="{{ route('student.tuition') }}"
-                               style="background:#fff;color:#7b1fa2;border-radius:12px;padding:12px 28px;font-weight:800;font-size:0.95rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-                                <i class="bi bi-credit-card"></i>
-                                {{ $paidInst1 ? 'سداد القسط الثاني' : 'سداد المصاريف' }}
+                               class="btn btn-primary px-4 py-2" style="background:var(--primary);border-radius:8px;font-weight:700;">
+                                <i class="bi bi-credit-card me-2"></i> {{ $paidInst1 ? 'سداد القسط الثاني' : 'متابعة السداد' }}
                             </a>
                         @else
-                            <span style="background:rgba(255,255,255,0.15);color:#fff;border-radius:12px;padding:12px 28px;font-weight:700;font-size:0.95rem;display:inline-flex;align-items:center;gap:8px;">
+                            <span class="badge bg-success px-4 py-3 rounded-3 fs-6 d-flex align-items-center gap-2">
                                 <i class="bi bi-check-circle-fill"></i> مكتملة
                             </span>
                         @endif
@@ -244,13 +244,14 @@
                 {{-- Progress bar --}}
                 @php
                     $progress = $paidFull || ($paidInst1 && $paidInst2) ? 100 : ($paidInst1 ? 66 : 0);
+                    $progressColor = $progress === 100 ? '#10b981' : 'var(--accent)';
                 @endphp
-                <div class="mt-4">
-                    <div class="d-flex justify-content-between mb-1" style="font-size:0.78rem;opacity:0.75;">
+                <div class="mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-between mb-2" style="font-size:0.8rem;color:#64748b;font-weight:600;">
                         <span>نسبة السداد</span><span>{{ $progress }}%</span>
                     </div>
-                    <div style="background:rgba(255,255,255,0.2);border-radius:50px;height:8px;">
-                        <div style="background:#fff;border-radius:50px;height:8px;width:{{ $progress }}%;transition:width 0.5s;"></div>
+                    <div style="background:#e2e8f0;border-radius:50px;height:6px;">
+                        <div style="background:{{ $progressColor }};border-radius:50px;height:6px;width:{{ $progress }}%;transition:width 0.5s;"></div>
                     </div>
                 </div>
             </div>
@@ -260,21 +261,21 @@
         @if($mostUsed->count() > 0)
         <div class="mb-5">
             <h5 class="fw-bold mb-3" style="color:#1a2d5a;">
-                <i class="bi bi-star-fill me-2" style="color:#ffb300;"></i>الأكثر استخداماً
+                <i class="bi bi-bookmark-star-fill me-2" style="color:var(--accent);"></i>الخدمات الشائعة
             </h5>
             <div class="row g-3">
                 @foreach($mostUsed as $service)
                     <div class="col-xl-3 col-lg-4 col-md-6">
-                        <div class="service-card h-100" style="border-color: #ffb300; background: #fffcf5;">
-                            <div class="card-top">
-                                <div class="svc-icon" style="background:#fff8e1; color:#f57f17;">
-                                    <i class="bi bi-lightning-charge-fill"></i>
+                        <div class="service-card h-100" style="border-color: #e5eaf2; background: #fff;">
+                            <div class="card-top p-4 text-center">
+                                <div class="svc-icon bg-light text-primary" style="width:50px;height:50px;margin:0 auto 12px;font-size:1.3rem;">
+                                    <i class="bi bi-file-earmark-text"></i>
                                 </div>
-                                <h6 style="font-size: 0.9rem;">{{ $service->name }}</h6>
-                                <div class="price" style="font-size: 1.4rem;">{{ number_format($service->amount) }} <small style="font-size:0.8rem;color:#888;">ج.م</small></div>
+                                <h6 style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">{{ $service->name }}</h6>
+                                <div class="mt-2" style="font-size: 1.2rem; font-weight: 800; color: #10b981;">{{ number_format($service->amount) }} <small style="font-size:0.8rem;color:#64748b;font-weight:500;">ج.م</small></div>
                             </div>
-                            <a href="{{ route('student.checkout', $service) }}" class="btn-pay" style="background: #f57f17; border-top: none;">
-                                <i class="bi bi-credit-card me-2"></i> ادفع الآن
+                            <a href="{{ route('student.checkout', $service) }}" class="btn-pay" style="background: #f8fafc; color: var(--primary); border-top: 1px solid #e5eaf2;">
+                                <i class="bi bi-credit-card me-2"></i> سداد الرسوم
                             </a>
                         </div>
                     </div>
@@ -285,14 +286,14 @@
 
         {{-- ─── Service Categories ─── --}}
         <div class="mb-4">
-            <h5 class="fw-bold mb-3" style="color:#1a2d5a;">تصفح الخدمات حسب التصنيف</h5>
+            <h5 class="fw-bold mb-3" style="color:#1a2d5a;">دليل الخدمات والتصنيفات</h5>
             <div class="d-flex gap-2 flex-wrap mb-4">
                 <button class="btn btn-category active" data-category="all">
-                    <i class="bi bi-grid-fill me-2"></i>كل الخدمات
+                    الكل
                 </button>
                 @foreach($services as $type => $group)
                     <button class="btn btn-category" data-category="{{ Str::slug($type, '-') }}">
-                        <i class="bi {{ $iconMap[$type]['icon'] ?? 'bi-circle-fill' }} me-2"></i>{{ $type }}
+                        {{ $type }}
                     </button>
                 @endforeach
             </div>
@@ -301,24 +302,19 @@
         <div id="services-grid">
             @foreach($services as $type => $group)
                 <div class="service-section mb-2" data-type="{{ Str::slug($type, '-') }}">
-                    <h5 class="fw-bold mb-3 section-title" style="color:#1a2d5a;">
-                        <i class="bi {{ $iconMap[$type]['icon'] ?? 'bi-circle-fill' }} me-2"></i>{{ $type }}
-                    </h5>
+                    <h6 class="fw-bold mb-3 section-title" style="color:#64748b; font-size: 0.9rem;">
+                        {{ $type }}
+                    </h6>
                     <div class="row g-3 mb-4">
                         @foreach($group as $service)
                             <div class="col-xl-3 col-lg-4 col-md-6 service-item">
-                                <div class="service-card h-100">
-                                    <div class="card-top">
-                                        <div class="svc-icon"
-                                             style="background:{{ $iconMap[$service->type]['bg'] ?? '#f0f4f8' }};
-                                                    color:{{ $iconMap[$service->type]['color'] ?? '#1a2d5a' }};">
-                                            <i class="bi {{ $iconMap[$service->type]['icon'] ?? 'bi-wallet2' }}"></i>
-                                        </div>
-                                        <h6>{{ $service->name }}</h6>
-                                        <div class="price">{{ number_format($service->amount) }} <small style="font-size:0.9rem;color:#888;">ج.م</small></div>
+                                <div class="service-card h-100" style="border: 1px solid #e5eaf2; border-radius: 12px;">
+                                    <div class="card-top p-4 text-center">
+                                        <h6 style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">{{ $service->name }}</h6>
+                                        <div class="mt-2" style="font-size: 1.2rem; font-weight: 800; color: #10b981;">{{ number_format($service->amount) }} <small style="font-size:0.8rem;color:#64748b;font-weight:500;">ج.م</small></div>
                                     </div>
-                                    <a href="{{ route('student.checkout', $service) }}" class="btn-pay">
-                                        <i class="bi bi-credit-card me-2"></i> ادفع الآن
+                                    <a href="{{ route('student.checkout', $service) }}" class="btn-pay" style="background: #f8fafc; color: var(--primary); border-top: 1px solid #e5eaf2; padding: 10px; font-size: 0.9rem;">
+                                        متابعة السداد
                                     </a>
                                 </div>
                             </div>
@@ -335,7 +331,7 @@
                 <h5 class="fw-bold m-0" style="color:#1a2d5a;">
                     <i class="bi bi-clock-history me-2" style="color:#3b82f6;"></i>أحدث المدفوعات
                 </h5>
-                <a href="{{ route('student.history') }}" class="btn btn-sm btn-outline-primary rounded-pill">عرض السجل الكامل</a>
+                <a href="{{ route('student.history') }}" class="btn btn-sm btn-outline-primary rounded-pill">عرض الأرشيف الكامل</a>
             </div>
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="table-responsive">
@@ -410,7 +406,7 @@
         background: var(--primary);
         color: #fff;
         border-color: var(--primary);
-        box-shadow: 0 4px 15px rgba(26,45,90,0.2);
+        box-shadow: 0 4px 15px rgba(26,45,90,0.1);
     }
     .service-section {
         transition: opacity 0.3s ease;
@@ -442,6 +438,158 @@
                     }
                 });
             });
+        });
+    });
+</script>
+<!-- Chatbot Widget -->
+<div id="chatbot-widget" class="chatbot-widget">
+    <div class="chatbot-header">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-robot fs-4"></i>
+            <div>
+                <div class="fw-bold">المساعد الذكي للطلاب</div>
+                <div style="font-size: 0.7rem; opacity: 0.8;">جاهز للرد على استفساراتك</div>
+            </div>
+        </div>
+        <button id="close-chat" class="btn btn-sm text-white p-0"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages">
+        <div class="message bot-message">
+            أهلاً بيك يا {{ auth()->guard('student')->user()->name }}! أنا المساعد الذكي الخاص بيك. أقدر أساعدك إزاي النهاردة؟
+        </div>
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="chat-input" placeholder="اكتب سؤالك هنا... (مثال: عليا كام؟)">
+        <button id="send-chat" class="btn rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:40px;height:40px; background:var(--primary); color:#fff; border:none;">
+            <i class="bi bi-send-fill" style="transform: rotate(45deg); margin-left:-2px;"></i>
+        </button>
+    </div>
+</div>
+
+<button id="chatbot-toggle" class="chatbot-toggle shadow-lg">
+    <i class="bi bi-chat-dots-fill"></i>
+</button>
+
+<style>
+    .chatbot-toggle {
+        position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px;
+        border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: #fff; border: none; font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 1000; transition: transform 0.3s;
+    }
+    .chatbot-toggle:hover { transform: scale(1.1); }
+    
+    .chatbot-widget {
+        position: fixed; bottom: 100px; left: 30px; width: 350px; max-width: calc(100vw - 60px);
+        background: #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        display: none; flex-direction: column; overflow: hidden; z-index: 1000;
+        border: 1px solid #e5eaf2;
+    }
+    .chatbot-widget.active { display: flex; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .chatbot-header {
+        background: var(--primary); color: #fff; padding: 15px 20px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    .chatbot-messages {
+        height: 350px; padding: 20px; overflow-y: auto; background: #f8fafc;
+        display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
+    }
+    
+    .message { max-width: 85%; padding: 12px 16px; border-radius: 15px; font-size: 0.9rem; line-height: 1.5; position: relative; }
+    .bot-message { background: #fff; border: 1px solid #e5eaf2; color: #333; border-bottom-right-radius: 4px; align-self: flex-start; }
+    .user-message { background: var(--primary); color: #fff; border-bottom-left-radius: 4px; align-self: flex-end; }
+    
+    .chatbot-input {
+        padding: 15px; background: #fff; border-top: 1px solid #e5eaf2;
+        display: flex; gap: 10px; align-items: center;
+    }
+    .chatbot-input input {
+        flex: 1; border: 1px solid #e5eaf2; border-radius: 50px; padding: 10px 15px; outline: none; font-family: 'Tajawal', sans-serif;
+    }
+    .chatbot-input input:focus { border-color: var(--primary); }
+    
+    .typing-indicator { display: flex; gap: 4px; padding: 8px 12px; align-items: center; }
+    .typing-indicator span { width: 6px; height: 6px; background: #ccc; border-radius: 50%; animation: blink 1.4s infinite both; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.getElementById('chatbot-toggle');
+        const widget = document.getElementById('chatbot-widget');
+        const closeBtn = document.getElementById('close-chat');
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-chat');
+        const messagesBox = document.getElementById('chatbot-messages');
+
+        toggleBtn.addEventListener('click', () => {
+            widget.classList.toggle('active');
+            if (widget.classList.contains('active')) input.focus();
+        });
+        closeBtn.addEventListener('click', () => widget.classList.remove('active'));
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = 'message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+            // Allow basic markdown bold **text** -> <strong>text</strong>
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            div.innerHTML = text;
+            messagesBox.appendChild(div);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        function showTyping() {
+            const div = document.createElement('div');
+            div.className = 'message bot-message typing-box';
+            div.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            messagesBox.appendChild(div);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        function removeTyping() {
+            const typing = messagesBox.querySelector('.typing-box');
+            if (typing) typing.remove();
+        }
+
+        async function sendMessage() {
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            appendMessage(msg, 'user');
+            input.value = '';
+            showTyping();
+
+            try {
+                const response = await fetch("{{ route('student.chat') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await response.json();
+                removeTyping();
+                if (response.ok) {
+                    appendMessage(data.reply, 'bot');
+                } else {
+                    appendMessage(data.reply || 'عذراً، حدث خطأ.', 'bot');
+                }
+            } catch (error) {
+                removeTyping();
+                appendMessage('معلش، مش قادر أرد دلوقتي عشان في مشكلة في الشبكة.', 'bot');
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
     });
 </script>
