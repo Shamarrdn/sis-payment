@@ -111,6 +111,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $this->call(\Database\Seeders\FacultyDepartmentSeeder::class);
+
         // 4. Create Sample Student
         Student::create([
             'name' => 'أحمد محمد',

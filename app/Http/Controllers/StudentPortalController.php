@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use App\Models\Discount;
+use App\Models\Faculty;
 use App\Services\PaymentGatewayService;
 use App\Services\TuitionResolverService;
 use Illuminate\Support\Facades\Auth;
@@ -168,6 +169,41 @@ class StudentPortalController extends Controller
         ];
 
         return view('student.dashboard', compact('services', 'mostUsed', 'paidFull', 'paidInst1', 'paidInst2', 'tuition', 'unpaidCount', 'recentPayments', 'resolution', 'iconMap'));
+    }
+
+    public function profile()
+    {
+        $student   = Auth::guard('student')->user();
+        $faculties = Faculty::where('is_active', true)->with('activeDepartments')->get();
+
+        return view('student.profile', compact('student', 'faculties'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+
+        $validated = $request->validate([
+            'name'           => 'required|string|max:255',
+            'phone'          => 'nullable|string|max:25',
+            'academic_year'  => 'nullable|string|max:100',
+            'program'        => 'nullable|string|max:255',
+            'faculty_id'     => 'nullable|exists:faculties,id',
+            'department_id'  => 'nullable|exists:departments,id',
+            'special_category' => 'nullable|string|max:255',
+            'user_category'  => 'nullable|string|max:255',
+        ]);
+
+        if (!empty($validated['department_id']) && !empty($validated['faculty_id'])) {
+            $department = \App\Models\Department::find($validated['department_id']);
+            if ($department && $department->faculty_id !== (int)$validated['faculty_id']) {
+                return back()->withErrors(['department_id' => 'القسم المحدد لا يتبع الكلية المحددة.'])->withInput();
+            }
+        }
+
+        $student->update($validated);
+
+        return redirect()->route('student.profile')->with('success', 'تم حفظ بياناتك بنجاح.');
     }
 
     public function tuition()

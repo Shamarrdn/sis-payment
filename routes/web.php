@@ -29,6 +29,8 @@ Route::prefix('student')->group(function () {
         Route::post('/pay/{service}', [StudentPortalController::class, 'pay'])->name('student.pay');
         Route::get('/receipt/{payment}', [StudentPortalController::class, 'receipt'])->name('student.receipt');
         Route::get('/history', [StudentPortalController::class, 'history'])->name('student.history');
+        Route::get('/profile', [StudentPortalController::class, 'profile'])->name('student.profile');
+        Route::post('/profile', [StudentPortalController::class, 'updateProfile'])->name('student.profile.update');
         Route::post('/chat', [\App\Http\Controllers\ChatbotController::class, 'chat'])->name('student.chat');
     });
 });

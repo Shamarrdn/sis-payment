@@ -105,6 +105,9 @@
         <a href="{{ route('student.history') }}" class="{{ request()->routeIs('student.history') ? 'active' : '' }}">
             <i class="bi bi-archive-fill"></i> الأرشيف الرقمي
         </a>
+        <a href="{{ route('student.profile') }}" class="{{ request()->routeIs('student.profile') ? 'active' : '' }}">
+            <i class="bi bi-pencil-square"></i> تكملة بياناتي
+        </a>
     </nav>
     <div class="sidebar-footer">
         <form action="{{ route('student.logout') }}" method="POST">
@@ -125,7 +128,7 @@
             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" aria-labelledby="profileDropdown" style="border-radius: 12px; min-width: 220px; padding: 8px;">
                 <li><h6 class="dropdown-header mb-2" style="font-weight: 700; color: #7a8aaa;">خيارات الحساب</h6></li>
                 <li>
-                    <a class="dropdown-item rounded-3 py-2" href="#">
+                    <a class="dropdown-item rounded-3 py-2" href="{{ route('student.profile') }}">
                         <i class="bi bi-person-badge-fill me-2 text-primary"></i> تكملة بياناتي
                     </a>
                 </li>

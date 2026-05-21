@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             $table->string('phone')->nullable();
-            $table->string('college')->nullable();
+            $table->string('college')->default('جامعة بني سويف التكنولوجية');
             $table->string('user_category')->default('Student'); // Student, Graduate, Master's, etc.
             $table->string('special_category')->nullable(); // Martyrs, Outstanding, etc.
             $table->string('username')->nullable()->unique();
