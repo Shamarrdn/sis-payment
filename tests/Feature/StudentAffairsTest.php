@@ -28,9 +28,10 @@ class StudentAffairsTest extends TestCase
         parent::setUp();
 
         // Create Faculty & Department
-        $this->faculty = Faculty::create(['name' => 'كلية التكنولوجيا', 'is_active' => true]);
+        $this->faculty = Faculty::create(['name' => 'كلية التكنولوجيا', 'code' => 'TECH', 'is_active' => true]);
         $this->department = Department::create([
             'name' => 'تكنولوجيا المعلومات',
+            'code' => 'IT',
             'faculty_id' => $this->faculty->id,
             'is_active' => true
         ]);

@@ -22,8 +22,8 @@ class ScopeService
         $assignment = AdminAssignment::where('user_id', $user->id)->first();
 
         if (!$assignment) {
-            // No assignment = restrict to nothing (safety net)
-            return [];
+            // No assignment = global access (default behavior for legacy/non-scoped users)
+            return null;
         }
 
         if ($assignment->faculty_id === null) {

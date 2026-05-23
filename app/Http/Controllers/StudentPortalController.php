@@ -301,7 +301,7 @@ class StudentPortalController extends Controller
             abort(401);
         }
 
-        $path = storage_path('app/' . $document->file_path);
+        $path = \Illuminate\Support\Facades\Storage::disk('local')->path($document->file_path);
         if (!file_exists($path)) {
             abort(404, 'المستند غير موجود على الخادم.');
         }
