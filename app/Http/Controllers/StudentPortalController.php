@@ -173,26 +173,34 @@ class StudentPortalController extends Controller
 
     public function profile()
     {
-        $student   = Auth::guard('student')->user();
+        $student   = Auth::guard('student')->user()->load(['documents', 'sensitiveDataRequests' => function($q) {
+            $q->where('status', 'pending');
+        }]);
         $faculties = Faculty::where('is_active', true)->with('activeDepartments')->get();
+        $pendingRequest = $student->sensitiveDataRequests->first();
 
-        return view('student.profile', compact('student', 'faculties'));
+        return view('student.profile', compact('student', 'faculties', 'pendingRequest'));
     }
 
     public function updateProfile(Request $request)
     {
         $student = Auth::guard('student')->user();
 
-        $validated = $request->validate([
+        $rules = [
             'name'           => 'required|string|max:255',
+            'national_id'    => 'required|string|max:30|unique:students,national_id,' . $student->id,
             'phone'          => 'nullable|string|max:25',
+            'email'          => 'nullable|email|max:255|unique:students,email,' . $student->id,
+            'address'        => 'nullable|string|max:255',
             'academic_year'  => 'nullable|string|max:100',
             'program'        => 'nullable|string|max:255',
             'faculty_id'     => 'nullable|exists:faculties,id',
             'department_id'  => 'nullable|exists:departments,id',
             'special_category' => 'nullable|string|max:255',
             'user_category'  => 'nullable|string|max:255',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         if (!empty($validated['department_id']) && !empty($validated['faculty_id'])) {
             $department = \App\Models\Department::find($validated['department_id']);
@@ -201,9 +209,104 @@ class StudentPortalController extends Controller
             }
         }
 
+        // Detect sensitive changes: name, national_id, faculty_id, department_id
+        $sensitiveChanges = [];
+        
+        if ($validated['name'] !== $student->name) {
+            $sensitiveChanges['name'] = $validated['name'];
+        }
+        if ($validated['national_id'] !== $student->national_id) {
+            $sensitiveChanges['national_id'] = $validated['national_id'];
+        }
+        
+        $reqFacultyId = !empty($validated['faculty_id']) ? (int)$validated['faculty_id'] : null;
+        $currFacultyId = $student->faculty_id ? (int)$student->faculty_id : null;
+        if ($reqFacultyId !== $currFacultyId) {
+            $sensitiveChanges['faculty_id'] = $reqFacultyId;
+        }
+
+        $reqDeptId = !empty($validated['department_id']) ? (int)$validated['department_id'] : null;
+        $currDeptId = $student->department_id ? (int)$student->department_id : null;
+        if ($reqDeptId !== $currDeptId) {
+            $sensitiveChanges['department_id'] = $reqDeptId;
+        }
+
+        $hasSensitiveChanges = !empty($sensitiveChanges);
+
+        if ($hasSensitiveChanges) {
+            // Store sensitive request
+            \App\Models\SensitiveDataRequest::updateOrCreate(
+                ['student_id' => $student->id, 'status' => 'pending'],
+                [
+                    'requested_data' => $sensitiveChanges,
+                    'rejection_reason' => null
+                ]
+            );
+
+            // Revert these fields from the immediate update array
+            unset($validated['name']);
+            unset($validated['national_id']);
+            unset($validated['faculty_id']);
+            unset($validated['department_id']);
+        }
+
+        // Update other fields directly
         $student->update($validated);
 
-        return redirect()->route('student.profile')->with('success', 'تم حفظ بياناتك بنجاح.');
+        if ($hasSensitiveChanges) {
+            return redirect()->route('student.profile')->with('success', 'تم حفظ بياناتك الشخصية بنجاح، وتم إرسال طلب تعديل البيانات الحساسة (الاسم/الرقم القومي/الكلية/القسم) للمراجعة والاعتماد من قبل إدارة شؤون الطلاب.');
+        }
+
+        return redirect()->route('student.profile')->with('success', 'تم حفظ البيانات بنجاح.');
+    }
+
+    public function uploadDocument(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:national_id,birth_certificate,personal_photo,additional',
+            'file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('documents');
+
+        $student = Auth::guard('student')->user();
+
+        \App\Models\StudentDocument::updateOrCreate(
+            ['student_id' => $student->id, 'type' => $validated['type']],
+            [
+                'file_path' => $path,
+                'status' => 'pending',
+                'rejection_reason' => null,
+            ]
+        );
+
+        return back()->with('success', 'تم رفع المستند بنجاح وهو قيد المراجعة حالياً.');
+    }
+
+    public function viewDocument(\App\Models\StudentDocument $document)
+    {
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            $studentQuery = \App\Models\Student::where('id', $document->student_id);
+            $scopedStudents = \App\Services\ScopeService::scopeStudents($studentQuery, $user);
+            if (!$scopedStudents->exists()) {
+                abort(403, 'غير مصرح لك باستعراض مستندات هذا الطالب.');
+            }
+        } elseif (Auth::guard('student')->check()) {
+            if (Auth::guard('student')->id() !== $document->student_id) {
+                abort(403, 'غير مصرح لك باستعراض هذا المستند.');
+            }
+        } else {
+            abort(401);
+        }
+
+        $path = storage_path('app/' . $document->file_path);
+        if (!file_exists($path)) {
+            abort(404, 'المستند غير موجود على الخادم.');
+        }
+
+        return response()->file($path);
     }
 
     public function tuition()

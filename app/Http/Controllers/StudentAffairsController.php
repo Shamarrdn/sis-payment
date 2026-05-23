@@ -10,12 +10,96 @@ use App\Services\ScopeService;
 
 class StudentAffairsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $query = Student::query();
         $query = ScopeService::scopeStudents($query, auth()->user());
+
+        // Advanced Search & Filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%")
+                  ->orWhere('national_id', 'like', "%{$search}%")
+                  ->orWhere('academic_year', 'like', "%{$search}%")
+                  ->orWhere('program', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('faculty_id')) {
+            $query->where('faculty_id', $request->faculty_id);
+        }
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('completion')) {
+            $completion = $request->completion;
+            if ($completion === 'complete') {
+                $query->whereNotNull('phone')->where('phone', '!=', '')
+                    ->whereNotNull('email')->where('email', '!=', '')
+                    ->whereNotNull('address')->where('address', '!=', '')
+                    ->whereHas('documents', function($q) {
+                        $q->where('type', 'national_id')->where('status', '!=', 'rejected');
+                    })
+                    ->whereHas('documents', function($q) {
+                        $q->where('type', 'birth_certificate')->where('status', '!=', 'rejected');
+                    })
+                    ->whereHas('documents', function($q) {
+                        $q->where('type', 'personal_photo')->where('status', '!=', 'rejected');
+                    });
+            } elseif ($completion === 'incomplete') {
+                $query->where(function($q) {
+                    $q->whereNull('phone')->orWhere('phone', '')
+                      ->orWhereNull('email')->orWhere('email', '')
+                      ->orWhereNull('address')->orWhere('address', '')
+                      ->orWhereNotExists(function($sub) {
+                          $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                              ->from('student_documents')
+                              ->whereColumn('student_documents.student_id', 'students.id')
+                              ->where('type', 'national_id')
+                              ->where('status', '!=', 'rejected');
+                      })
+                      ->orWhereNotExists(function($sub) {
+                          $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                              ->from('student_documents')
+                              ->whereColumn('student_documents.student_id', 'students.id')
+                              ->where('type', 'birth_certificate')
+                              ->where('status', '!=', 'rejected');
+                      })
+                      ->orWhereNotExists(function($sub) {
+                          $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                              ->from('student_documents')
+                              ->whereColumn('student_documents.student_id', 'students.id')
+                              ->where('type', 'personal_photo')
+                              ->where('status', '!=', 'rejected');
+                      });
+                });
+            }
+        }
+
+        if ($request->filled('missing_document')) {
+            $missingDoc = $request->missing_document;
+            if (in_array($missingDoc, ['national_id', 'birth_certificate', 'personal_photo'])) {
+                $query->whereNotExists(function($sub) use ($missingDoc) {
+                    $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                        ->from('student_documents')
+                        ->whereColumn('student_documents.student_id', 'students.id')
+                        ->where('type', $missingDoc)
+                        ->where('status', '!=', 'rejected');
+                });
+            }
+        }
+
         $students = $query->latest()->paginate(15);
         $services = \App\Models\Service::where('is_active', true)->get();
+        $faculties = \App\Models\Faculty::where('is_active', true)->with('activeDepartments')->get();
 
         // Inject resolution data for each student
         $students->getCollection()->transform(function ($student) {
@@ -23,7 +107,7 @@ class StudentAffairsController extends Controller
             return $student;
         });
 
-        return view('affairs.student.index', compact('students', 'services'));
+        return view('affairs.student.index', compact('students', 'services', 'faculties'));
     }
 
     public function create()
@@ -311,5 +395,209 @@ class StudentAffairsController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function show(Student $student)
+    {
+        $student->load([
+            'documents',
+            'sensitiveDataRequests' => function ($q) {
+                $q->latest();
+            },
+            'statusHistories.changer',
+            'internalNotes.user'
+        ]);
+
+        $faculties = \App\Models\Faculty::where('is_active', true)->with('activeDepartments')->get();
+
+        return view('affairs.student.show', compact('student', 'faculties'));
+    }
+
+    public function updateStatus(Student $student, Request $request)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:active,suspended,graduated',
+            'notes' => 'required|string|max:500',
+        ]);
+
+        $oldStatus = $student->status;
+        $newStatus = $validated['status'];
+
+        if ($oldStatus === $newStatus) {
+            return back()->withErrors(['status' => 'الحالة المحددة مطابقة للحالة الحالية للطالب.']);
+        }
+
+        $student->update(['status' => $newStatus]);
+
+        $student->statusHistories()->create([
+            'status' => $newStatus,
+            'changed_by' => auth()->id(),
+            'notes' => $validated['notes'],
+        ]);
+
+        AuditLoggerService::log('Update Student Status', $student, ['status' => $oldStatus], ['status' => $newStatus, 'notes' => $validated['notes']]);
+
+        return back()->with('success', 'تم تحديث حالة الطالب بنجاح وتسجيل العملية في سجل التتبع.');
+    }
+
+    public function addNote(Student $student, Request $request)
+    {
+        $validated = $request->validate([
+            'note' => 'required|string|max:1000',
+        ]);
+
+        $student->internalNotes()->create([
+            'user_id' => auth()->id(),
+            'note' => $validated['note'],
+        ]);
+
+        AuditLoggerService::log('Add Student Internal Note', $student, null, ['note_preview' => Str::limit($validated['note'], 50)]);
+
+        return back()->with('success', 'تم إضافة الملاحظة الداخلية بنجاح.');
+    }
+
+    public function verifyDocument(\App\Models\StudentDocument $document, Request $request)
+    {
+        $user = auth()->user();
+        
+        $studentQuery = Student::where('id', $document->student_id);
+        $scopedStudents = \App\Services\ScopeService::scopeStudents($studentQuery, $user);
+        if (!$scopedStudents->exists()) {
+            abort(403, 'غير مصرح لك بالوصول لهذا الطالب أو تعديل مستنداته.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:verified,rejected',
+            'rejection_reason' => 'required_if:status,rejected|nullable|string|max:255',
+        ]);
+
+        $oldStatus = $document->status;
+        $document->update([
+            'status' => $validated['status'],
+            'rejection_reason' => $validated['status'] === 'rejected' ? $validated['rejection_reason'] : null,
+        ]);
+
+        $student = $document->student;
+        AuditLoggerService::log('Verify Document', $document, ['status' => $oldStatus], ['status' => $validated['status'], 'rejection_reason' => $validated['rejection_reason'] ?? null]);
+
+        return back()->with('success', 'تم تحديث حالة المستند بنجاح.');
+    }
+
+    public function processSensitiveRequest(\App\Models\SensitiveDataRequest $updateRequest, Request $request)
+    {
+        $user = auth()->user();
+        
+        $studentQuery = Student::where('id', $updateRequest->student_id);
+        $scopedStudents = \App\Services\ScopeService::scopeStudents($studentQuery, $user);
+        if (!$scopedStudents->exists()) {
+            abort(403, 'غير مصرح لك بالوصول لهذا الطالب أو تعديل بياناته.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:approved,rejected',
+            'rejection_reason' => 'required_if:status,rejected|nullable|string|max:255',
+        ]);
+
+        $student = $updateRequest->student;
+        $oldValues = $student->only(array_keys($updateRequest->requested_data));
+
+        if ($validated['status'] === 'approved') {
+            $student->update($updateRequest->requested_data);
+
+            $updateRequest->update([
+                'status' => 'approved',
+                'reviewed_by' => $user->id,
+            ]);
+
+            AuditLoggerService::log('Approve Sensitive Data Request', $student, $oldValues, $updateRequest->requested_data);
+        } else {
+            $updateRequest->update([
+                'status' => 'rejected',
+                'reviewed_by' => $user->id,
+                'rejection_reason' => $validated['rejection_reason'],
+            ]);
+
+            AuditLoggerService::log('Reject Sensitive Data Request', $student, null, [
+                'request_id' => $updateRequest->id,
+                'rejection_reason' => $validated['rejection_reason'],
+            ]);
+        }
+
+        return back()->with('success', $validated['status'] === 'approved' ? 'تم اعتماد تعديل البيانات الحساسة وتطبيقها بنجاح.' : 'تم رفض طلب تعديل البيانات الحساسة.');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id',
+            'action_type' => 'required|in:update_status,add_note,verify_documents',
+            'status' => 'required_if:action_type,update_status|in:active,suspended,graduated',
+            'status_notes' => 'required_if:action_type,update_status|string|max:500',
+            'note' => 'required_if:action_type,add_note|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $studentIds = $validated['student_ids'];
+
+        $studentQuery = Student::whereIn('id', $studentIds);
+        $scopedQuery = \App\Services\ScopeService::scopeStudents($studentQuery, $user);
+        $validStudentIds = $scopedQuery->pluck('id')->toArray();
+
+        if (count($studentIds) !== count($validStudentIds)) {
+            return back()->withErrors(['student_ids' => 'تحتوي القائمة المحددة على طلاب خارج نطاق صلاحيتك.'])->withInput();
+        }
+
+        $processedCount = 0;
+
+        if ($validated['action_type'] === 'update_status') {
+            $newStatus = $validated['status'];
+            $statusNotes = $validated['status_notes'];
+
+            foreach ($validStudentIds as $id) {
+                $student = Student::find($id);
+                $oldStatus = $student->status;
+                if ($oldStatus !== $newStatus) {
+                    $student->update(['status' => $newStatus]);
+                    $student->statusHistories()->create([
+                        'status' => $newStatus,
+                        'changed_by' => $user->id,
+                        'notes' => $statusNotes,
+                    ]);
+                    AuditLoggerService::log('Bulk Update Student Status', $student, ['status' => $oldStatus], ['status' => $newStatus, 'notes' => $statusNotes]);
+                    $processedCount++;
+                }
+            }
+            $message = "تم تحديث حالة {$processedCount} من الطلاب المحددين بنجاح.";
+
+        } elseif ($validated['action_type'] === 'add_note') {
+            $noteText = $validated['note'];
+
+            foreach ($validStudentIds as $id) {
+                $student = Student::find($id);
+                $student->internalNotes()->create([
+                    'user_id' => $user->id,
+                    'note' => $noteText,
+                ]);
+                AuditLoggerService::log('Bulk Add Student Note', $student, null, ['note_preview' => Str::limit($noteText, 50)]);
+                $processedCount++;
+            }
+            $message = "تم إضافة ملاحظة داخلية لـ {$processedCount} من الطلاب بنجاح.";
+
+        } elseif ($validated['action_type'] === 'verify_documents') {
+            $pendingDocuments = \App\Models\StudentDocument::whereIn('student_id', $validStudentIds)
+                ->where('status', 'pending')
+                ->get();
+
+            foreach ($pendingDocuments as $doc) {
+                $oldStatus = $doc->status;
+                $doc->update(['status' => 'verified']);
+                AuditLoggerService::log('Bulk Verify Document', $doc, ['status' => $oldStatus], ['status' => 'verified']);
+                $processedCount++;
+            }
+            $message = "تم اعتماد وقبول {$processedCount} من المستندات المعلقة للطلاب بنجاح.";
+        }
+
+        return back()->with('success', $message);
     }
 }

@@ -31,9 +31,12 @@ Route::prefix('student')->group(function () {
         Route::get('/history', [StudentPortalController::class, 'history'])->name('student.history');
         Route::get('/profile', [StudentPortalController::class, 'profile'])->name('student.profile');
         Route::post('/profile', [StudentPortalController::class, 'updateProfile'])->name('student.profile.update');
+        Route::post('/profile/document', [StudentPortalController::class, 'uploadDocument'])->name('student.profile.document.upload');
         Route::post('/chat', [\App\Http\Controllers\ChatbotController::class, 'chat'])->name('student.chat');
     });
 });
+
+Route::get('/documents/{document}', [StudentPortalController::class, 'viewDocument'])->name('document.view');
 
 use App\Http\Controllers\StudentAffairsController;
 use App\Http\Controllers\FinancialAffairsController;
@@ -45,6 +48,12 @@ Route::middleware(['auth', 'role:student_affairs,super_admin,admin', 'scope'])->
     Route::post('/', [StudentAffairsController::class, 'store'])->name('store');
     Route::post('/import', [StudentAffairsController::class, 'import'])->name('import');
     Route::get('/csv-template', [StudentAffairsController::class, 'csvTemplate'])->name('csv-template');
+    Route::post('/bulk-action', [StudentAffairsController::class, 'bulkAction'])->name('bulk-action');
+    Route::get('/{student}', [StudentAffairsController::class, 'show'])->name('show');
+    Route::post('/{student}/status', [StudentAffairsController::class, 'updateStatus'])->name('update-status');
+    Route::post('/{student}/notes', [StudentAffairsController::class, 'addNote'])->name('add-note');
+    Route::post('/documents/{document}/verify', [StudentAffairsController::class, 'verifyDocument'])->name('verify-document');
+    Route::post('/sensitive-requests/{updateRequest}/process', [StudentAffairsController::class, 'processSensitiveRequest'])->name('process-sensitive-request');
     Route::get('/{student}/receipts', [StudentAffairsController::class, 'receipts'])->name('receipts');
     Route::post('/{student}/manual-pay', [StudentAffairsController::class, 'manualPay'])->name('manual-pay');
 });
