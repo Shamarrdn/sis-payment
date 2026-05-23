@@ -188,14 +188,15 @@ class StudentCommunicationController extends Controller
                 'type'       => 'payment',
                 'title'      => $p->service?->name ?? 'دفع',
                 'status'     => $p->status,
-                'status_label' => match ($p->status) {
-                    'paid' => 'مدفوع',
-                    'pending' => 'معلق',
-                    'failed' => 'فشل',
-                    default => $p->status,
-                },
+                'status_label' => $p->status === 'paid'
+                    ? \App\Services\PaymentRequestService::fulfillmentLabel($p->fulfillment_status ?? 'awaiting_processing')
+                    : match ($p->status) {
+                        'pending' => 'معلق',
+                        'failed' => 'فشل',
+                        default => $p->status,
+                    },
                 'date'       => $p->created_at,
-                'url'        => $p->status === 'paid' ? route('student.receipt', $p) : route('student.history'),
+                'url'        => $p->status === 'paid' ? route('student.service-request.show', $p) : route('student.history'),
             ]);
 
         $sensitive = SensitiveDataRequest::where('student_id', $student->id)

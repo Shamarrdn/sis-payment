@@ -5,10 +5,13 @@
 @section('user-name', auth()->user()->name)
 
 @section('content')
-<div class="mb-4">
+<div class="mb-4 d-flex flex-wrap gap-2">
     <a href="{{ route('affairs.student.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
         <i class="bi bi-arrow-right me-1"></i> العودة لقائمة الطلاب
     </a>
+    <a href="{{ route('affairs.student.card', $student) }}" class="btn btn-sm btn-primary rounded-pill px-3"><i class="bi bi-person-vcard"></i> كارت الطالب</a>
+    <a href="{{ route('affairs.student.print', $student) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="bi bi-printer"></i> طباعة الملف</a>
+    <a href="{{ route('affairs.student.qr', $student) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3"><i class="bi bi-qr-code"></i> QR</a>
 </div>
 
 <div class="row g-4">

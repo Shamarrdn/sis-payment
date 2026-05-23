@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Payment;
+use App\Models\Student;
 use App\Services\AuditLoggerService;
+use App\Services\ScopeService;
 
 class ExportController extends Controller
 {
@@ -152,6 +154,71 @@ class ExportController extends Controller
         };
 
         AuditLoggerService::log('Export Daily Settlement', null, null, ['date' => $date, 'count' => $payments->count()]);
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function students(Request $request)
+    {
+        if (!auth()->user()->hasPermission('export_data') && !in_array(auth()->user()->role, ['student_affairs', 'super_admin', 'admin'])) {
+            abort(403, 'ليس لديك صلاحية تصدير البيانات.');
+        }
+
+        $query = Student::with(['faculty', 'department']);
+        $query = ScopeService::scopeStudents($query, auth()->user());
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('national_id', 'like', "%{$s}%")
+                    ->orWhere('reference_number', 'like', "%{$s}%");
+            });
+        }
+        if ($request->filled('faculty_id')) {
+            $query->where('faculty_id', $request->faculty_id);
+        }
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $students = $query->orderBy('name')->get();
+        $format = $request->input('format', 'csv');
+
+        if ($format === 'pdf') {
+            return view('exports.students-pdf', compact('students'));
+        }
+
+        $filename = 'students_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($students) {
+            $handle = fopen('php://output', 'w');
+            fputs($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['الاسم', 'الرقم القومي', 'الكود المرجعي', 'الكلية', 'القسم', 'الفرقة', 'الحالة', 'الهاتف', 'البريد']);
+            foreach ($students as $st) {
+                fputcsv($handle, [
+                    $st->name,
+                    $st->national_id,
+                    $st->reference_number,
+                    $st->facultyName(),
+                    $st->departmentName(),
+                    $st->academic_year,
+                    $st->status,
+                    $st->phone,
+                    $st->email,
+                ]);
+            }
+            fclose($handle);
+        };
+
+        AuditLoggerService::log('Export Students', null, null, ['count' => $students->count()]);
+
         return response()->stream($callback, 200, $headers);
     }
 }

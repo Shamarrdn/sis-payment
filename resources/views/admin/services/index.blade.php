@@ -178,6 +178,7 @@
                                                     <option value="مصروفات دراسية" {{ in_array($service->type, ['مصاريف دراسية', 'مصروفات دراسية']) ? 'selected' : '' }}>مصروفات دراسية</option>
                                                 </select>
                                             </div>
+                                            @include('admin.services._extra_fields', ['service' => $service])
                                             <div class="row g-3 mb-4">
                                                 <div class="col-md-6">
                                                     <label class="form-label">السعر (ج.م)</label>
@@ -258,6 +259,7 @@
                             <option value="مصروفات دراسية">مصروفات دراسية</option>
                         </select>
                     </div>
+                    @include('admin.services._extra_fields')
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label">السعر الافتراضي (ج.م)</label>

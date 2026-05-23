@@ -43,6 +43,15 @@
                 <label class="form-label">إلى</label>
                 <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
             </div>
+            <div class="col-md-3">
+                <label class="form-label">نوع البيانات</label>
+                <select name="model_type" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach($modelTypes ?? [] as $mt)
+                        <option value="{{ class_basename($mt) }}" @selected(request('model_type') === class_basename($mt))>{{ class_basename($mt) }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-md-1">
                 <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter"></i></button>
             </div>

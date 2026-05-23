@@ -30,6 +30,12 @@
         <a href="{{ route('affairs.student.create') }}" class="btn-primary-uni">
             <i class="bi bi-plus-circle-fill"></i> إضافة طالب
         </a>
+        <a href="{{ route('affairs.student.export', request()->query()) }}" class="btn btn-sm btn-outline-success rounded-pill">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+        </a>
+        <a href="{{ route('affairs.student.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" target="_blank" class="btn btn-sm btn-outline-danger rounded-pill">
+            <i class="bi bi-file-pdf"></i> PDF
+        </a>
     </div>
 </div>
 

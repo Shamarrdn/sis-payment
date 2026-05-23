@@ -311,7 +311,7 @@
                 </button>
                 @foreach($services as $type => $group)
                     <button class="btn btn-category" data-category="{{ Str::slug($type, '-') }}">
-                        {{ $type }}
+                        {{ \App\Support\ServiceCategoryGroups::label($type) }}
                     </button>
                 @endforeach
             </div>
@@ -321,7 +321,7 @@
             @foreach($services as $type => $group)
                 <div class="service-section mb-2" data-type="{{ Str::slug($type, '-') }}">
                     <h6 class="fw-bold mb-3 section-title" style="color:#64748b; font-size: 0.9rem;">
-                        {{ $type }}
+                        {{ \App\Support\ServiceCategoryGroups::label($type) }}
                     </h6>
                     <div class="row g-3 mb-4">
                         @foreach($group as $service)
@@ -329,6 +329,9 @@
                                 <div class="service-card h-100" style="border: 1px solid #e5eaf2; border-radius: 12px;">
                                     <div class="card-top p-4 text-center">
                                         <h6 style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">{{ $service->name }}</h6>
+                                        @if($service->estimated_days)
+                                            <small class="text-muted d-block">~{{ $service->estimated_days }} أيام عمل</small>
+                                        @endif
                                         <div class="mt-2" style="font-size: 1.2rem; font-weight: 800; color: #10b981;">{{ number_format($service->amount) }} <small style="font-size:0.8rem;color:#64748b;font-weight:500;">ج.م</small></div>
                                     </div>
                                     <a href="{{ route('student.checkout', $service) }}" class="btn-pay" style="background: #f8fafc; color: var(--primary); border-top: 1px solid #e5eaf2; padding: 10px; font-size: 0.9rem;">

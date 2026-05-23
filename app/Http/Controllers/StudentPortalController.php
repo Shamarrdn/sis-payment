@@ -13,6 +13,7 @@ use App\Notifications\NewPaymentOrDue;
 use App\Notifications\NewRequestSubmitted;
 use App\Notifications\RequestStatusChanged;
 use App\Services\PaymentGatewayService;
+use App\Services\PaymentRequestService;
 use App\Services\StaffNotifier;
 use App\Services\TuitionResolverService;
 use Illuminate\Support\Facades\Auth;
@@ -124,7 +125,10 @@ class StudentPortalController extends Controller
             ->pluck('service_id');
 
         $mostUsed = Service::whereIn('id', $mostUsedIds)->get();
-        $services = Service::whereNotIn('type', ['مصاريف دراسية', 'مصروفات دراسية'])->where('is_active', true)->get()->groupBy('type');
+        $services = Service::whereNotIn('type', ['مصاريف دراسية', 'مصروفات دراسية'])
+            ->where('is_active', true)
+            ->get()
+            ->groupBy(fn ($s) => $s->category_group ?? 'student_affairs');
 
         $paidFull  = $this->hasPaid($student->id, $tuition['full']);
         $paidInst1 = $this->hasPaid($student->id, $tuition['inst1']);
@@ -413,6 +417,7 @@ class StudentPortalController extends Controller
 
         if ($outcome['status'] === 'paid') {
             $payment = $outcome['payment'];
+            PaymentRequestService::initialize($payment);
             $student->notify(new NewPaymentOrDue([
                 'title'            => 'تم سداد المصاريف الدراسية',
                 'message'          => 'تم تأكيد سداد المصاريف الدراسية',
@@ -456,6 +461,15 @@ class StudentPortalController extends Controller
             $rules['notes'] = 'required|string|max:255';
         }
 
+        foreach ($service->required_fields ?? [] as $field) {
+            $key = $field['key'] ?? null;
+            if ($key) {
+                $rules['request_fields.' . $key] = ($field['required'] ?? true)
+                    ? 'required|string|max:500'
+                    : 'nullable|string|max:500';
+            }
+        }
+
         $validated = $request->validate($rules);
         $quantity    = $validated['quantity'] ?? 1;
         $totalAmount = $service->amount * $quantity;
@@ -465,6 +479,7 @@ class StudentPortalController extends Controller
             $student->id, $service->id, $quantity, $service->amount, $totalAmount, $method,
             [
                 'notes'               => $validated['notes'] ?? null,
+                'request_fields'      => $validated['request_fields'] ?? null,
                 'faculty_id'          => $student->faculty_id,
                 'department_id'       => $student->department_id,
                 'faculty_snapshot'    => $student->facultyName(),
@@ -481,17 +496,18 @@ class StudentPortalController extends Controller
 
         if ($outcome['status'] === 'paid') {
             $payment = $outcome['payment'];
+            PaymentRequestService::initialize($payment);
             $student->notify(new NewPaymentOrDue([
                 'title'            => 'تم تأكيد الدفع',
                 'message'          => 'تم سداد ' . ($service->name ?? 'الخدمة') . ' بنجاح',
                 'amount'           => $payment->total_amount,
                 'service_name'     => $service->name,
                 'reference_number' => $payment->reference_number,
-                'action_url'       => route('student.receipt', $payment),
+                'action_url'       => route('student.service-request.show', $payment),
             ]));
 
-            return redirect()->route('student.receipt', $payment)
-                ->with('success', 'تم الدفع بنجاح عبر ' . $method . '. رقم الإيصال: ' . $payment->reference_number);
+            return redirect()->route('student.service-request.show', $payment)
+                ->with('success', 'تم الدفع بنجاح. يمكنك متابعة حالة الطلب من هذه الصفحة.');
         }
 
         return redirect()->route('student.history')

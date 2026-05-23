@@ -32,10 +32,23 @@ class Payment extends Model
         'refund_status',
         'refund_reason',
         'refunded_amount',
+        'fulfillment_status',
+        'request_fields',
+        'started_at',
+        'completed_at',
+        'fulfillment_cancelled_at',
+        'rating',
+        'rating_comment',
+        'rated_at',
     ];
 
     protected $casts = [
         'payment_date' => 'datetime',
+        'request_fields' => 'array',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'fulfillment_cancelled_at' => 'datetime',
+        'rated_at' => 'datetime',
     ];
 
     public function student(): BelongsTo
@@ -61,5 +74,22 @@ class Payment extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(PaymentAttempt::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(PaymentStatusHistory::class)->orderBy('created_at');
+    }
+
+    public function canBeCancelledByStudent(): bool
+    {
+        return $this->fulfillment_status === 'awaiting_processing'
+            && !$this->started_at
+            && $this->status === 'paid';
+    }
+
+    public function canBeRated(): bool
+    {
+        return $this->fulfillment_status === 'completed' && !$this->rating;
     }
 }

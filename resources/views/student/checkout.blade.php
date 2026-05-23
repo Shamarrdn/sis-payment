@@ -41,8 +41,28 @@
             </div>
         </div>
 
+        @if($service->instructions)
+            <div class="alert alert-info rounded-3 mb-4">
+                <div class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i> تعليمات الخدمة</div>
+                <div style="white-space:pre-wrap;">{{ $service->instructions }}</div>
+            </div>
+        @endif
+        @if($service->estimated_days)
+            <p class="small text-muted mb-3"><i class="bi bi-clock"></i> وقت التنفيذ المتوقع: <strong>{{ $service->estimated_days }} أيام عمل</strong></p>
+        @endif
+
         <form action="{{ route('student.pay', $service) }}" method="POST">
             @csrf
+
+            @foreach($service->required_fields ?? [] as $field)
+                @php $key = $field['key'] ?? ''; $label = $field['label'] ?? $key; @endphp
+                @if($key)
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ $label }} @if($field['required'] ?? true)<span class="text-danger">*</span>@endif</label>
+                    <input type="text" name="request_fields[{{ $key }}]" class="form-control" value="{{ old('request_fields.'.$key) }}" @if($field['required'] ?? true) required @endif>
+                </div>
+                @endif
+            @endforeach
 
             @if($errors->any())
                 <div class="alert alert-danger rounded-3 mb-3">

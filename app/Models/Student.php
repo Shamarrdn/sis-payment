@@ -29,13 +29,19 @@ class Student extends Authenticatable
         'username',
         'password',
         'status',
+        'must_change_password',
+        'last_login_at',
     ];
 
     protected $hidden = ['password'];
 
     protected function casts(): array
     {
-        return ['password' => 'hashed'];
+        return [
+            'password' => 'hashed',
+            'must_change_password' => 'boolean',
+            'last_login_at' => 'datetime',
+        ];
     }
 
     public function faculty(): BelongsTo

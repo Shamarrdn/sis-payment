@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Services\LoginActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class StudentAuthController extends Controller
 {
@@ -39,9 +39,18 @@ class StudentAuthController extends Controller
             RateLimiter::clear($throttleKey);
             Auth::guard('student')->login($student);
             $request->session()->regenerate();
-            return redirect()->intended('/student/dashboard');
+
+            $student->update(['last_login_at' => now()]);
+            LoginActivityLogger::log($request, 'student', true, null, $student->id, $student->national_id);
+
+            if ($student->must_change_password && $student->password) {
+                return redirect()->route('student.password.change');
+            }
+
+            return redirect()->intended(route('student.dashboard'));
         }
 
+        LoginActivityLogger::log($request, 'student', false, null, null, $credentials['national_id']);
         RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([

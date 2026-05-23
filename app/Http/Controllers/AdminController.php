@@ -89,10 +89,11 @@ class AdminController extends Controller
         ]);
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role'     => $validated['role'],
+            'name'                 => $validated['name'],
+            'email'                => $validated['email'],
+            'password'             => Hash::make($validated['password']),
+            'role'                 => $validated['role'],
+            'must_change_password' => true,
         ]);
 
         AuditLoggerService::log('Create Employee', $user, null, $user->only('name', 'email', 'role'));
@@ -114,6 +115,7 @@ class AdminController extends Controller
         if ($request->filled('password')) {
             $request->validate(['password' => 'string|min:8']);
             $user->password = Hash::make($request->password);
+            $user->must_change_password = true;
             $user->save();
         }
 
@@ -182,16 +184,20 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'amount'   => 'required|numeric|min:0',
-            'type'     => 'required|string|max:255',
-            'category' => 'nullable|string|max:255',
+            'name'            => 'required|string|max:255',
+            'amount'          => 'required|numeric|min:0',
+            'type'            => 'required|string|max:255',
+            'category'        => 'nullable|string|max:255',
+            'category_group'  => 'required|in:' . implode(',', \App\Support\ServiceCategoryGroups::keys()),
+            'instructions'    => 'nullable|string',
+            'estimated_days'  => 'required|integer|min:1|max:90',
         ]);
 
         $validated['is_active']       = $request->has('is_active');
         $validated['allows_quantity'] = $request->has('allows_quantity');
         $validated['faculty_id']     = $request->faculty_id ?: null;
         $validated['applicable_to']   = $request->applicable_to ?: null;
+        $validated['required_fields'] = $this->parseRequiredFields($request);
 
         $service = Service::create($validated);
         AuditLoggerService::log('Create Service', $service, null, $service->only('name', 'type', 'amount', 'is_active', 'faculty_id'));
@@ -205,9 +211,12 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name'   => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'type'   => 'required|string|max:255',
+            'name'           => 'required|string|max:255',
+            'amount'         => 'required|numeric|min:0',
+            'type'           => 'required|string|max:255',
+            'category_group' => 'required|in:' . implode(',', \App\Support\ServiceCategoryGroups::keys()),
+            'instructions'   => 'nullable|string',
+            'estimated_days' => 'required|integer|min:1|max:90',
         ]);
 
         $old = $service->only('name', 'type', 'amount', 'is_active', 'allows_quantity', 'faculty_id', 'applicable_to');
@@ -217,6 +226,10 @@ class AdminController extends Controller
             'amount'          => $validated['amount'],
             'type'            => $validated['type'],
             'category'        => $request->category,
+            'category_group'  => $validated['category_group'],
+            'instructions'    => $validated['instructions'] ?? null,
+            'estimated_days'  => $validated['estimated_days'],
+            'required_fields' => $this->parseRequiredFields($request),
             'is_active'       => $request->has('is_active'),
             'allows_quantity' => $request->has('allows_quantity'),
             'faculty_id'     => $request->faculty_id ?: null,
@@ -241,9 +254,12 @@ class AdminController extends Controller
     // ─── Refund Workflow ───────────────────────────────────────────────
     public function refundQueue(Request $request)
     {
-        $query = Payment::with(['student', 'service'])
-            ->whereIn('refund_status', ['requested', 'approved'])
-            ->orderByDesc('updated_at');
+        $user = auth()->user();
+        $query = ScopeService::scopePayments(
+            Payment::with(['student', 'service'])
+                ->whereIn('refund_status', ['requested', 'approved']),
+            $user
+        )->orderByDesc('updated_at');
 
         if ($request->filled('refund_status')) {
             $query->where('refund_status', $request->refund_status);
@@ -354,8 +370,11 @@ class AdminController extends Controller
     // ─── Pending Review Queue ──────────────────────────────────────────
     public function pendingQueue(Request $request)
     {
-        $payments = Payment::with(['student', 'service'])
-            ->where('status', 'pending')
+        $user = auth()->user();
+        $payments = ScopeService::scopePayments(
+            Payment::with(['student', 'service'])->where('status', 'pending'),
+            $user
+        )
             ->orderByDesc('payment_date')
             ->paginate(20);
 
@@ -401,10 +420,25 @@ class AdminController extends Controller
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
+        if ($request->filled('model_type')) {
+            $query->where('model_type', 'like', '%' . $request->model_type . '%');
+        }
 
         $logs      = $query->paginate(30)->withQueryString();
+        $modelTypes = AuditLog::whereNotNull('model_type')->distinct()->orderBy('model_type')->pluck('model_type');
         $employees = User::select('id', 'name')->get();
 
-        return view('admin.audit.index', compact('logs', 'employees'));
+        return view('admin.audit.index', compact('logs', 'employees', 'modelTypes'));
+    }
+
+    private function parseRequiredFields(Request $request): ?array
+    {
+        $raw = $request->input('required_fields_json');
+        if (!$raw) {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 }

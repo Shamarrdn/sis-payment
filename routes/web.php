@@ -16,12 +16,19 @@ Route::get('/login', [EmployeeAuthController::class, 'showLoginForm'])->name('lo
 Route::post('/login', [EmployeeAuthController::class, 'login']);
 Route::post('/logout', [EmployeeAuthController::class, 'logout'])->name('logout');
 
+Route::middleware(['auth', 'force.password:web'])->group(function () {
+    Route::get('/employee/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'showEmployeeForm'])->name('employee.password.change');
+    Route::post('/employee/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'updateEmployee'])->name('employee.password.update');
+});
+
 Route::prefix('student')->group(function () {
     Route::get('/login', [StudentAuthController::class, 'showLoginForm'])->name('student.login');
     Route::post('/login', [StudentAuthController::class, 'login']);
     Route::post('/logout', [StudentAuthController::class, 'logout'])->name('student.logout');
     
-    Route::middleware('auth:student')->group(function () {
+    Route::middleware(['auth:student', 'force.password:student'])->group(function () {
+        Route::get('/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'showStudentForm'])->name('student.password.change');
+        Route::post('/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'updateStudent'])->name('student.password.update');
         Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('student.dashboard');
         Route::get('/tuition', [StudentPortalController::class, 'tuition'])->name('student.tuition');
         Route::post('/tuition', [StudentPortalController::class, 'processTuition'])->name('student.tuition.pay');
@@ -41,6 +48,9 @@ Route::prefix('student')->group(function () {
         Route::get('/faq', [\App\Http\Controllers\StudentCommunicationController::class, 'faq'])->name('student.faq');
         Route::get('/help', [\App\Http\Controllers\StudentCommunicationController::class, 'helpCenter'])->name('student.help');
         Route::get('/requests', [\App\Http\Controllers\StudentCommunicationController::class, 'requestTracking'])->name('student.requests');
+        Route::get('/service-requests/{payment}', [\App\Http\Controllers\ServiceRequestController::class, 'show'])->name('student.service-request.show');
+        Route::post('/service-requests/{payment}/cancel', [\App\Http\Controllers\ServiceRequestController::class, 'cancel'])->name('student.service-request.cancel');
+        Route::post('/service-requests/{payment}/rate', [\App\Http\Controllers\ServiceRequestController::class, 'rate'])->name('student.service-request.rate');
         Route::get('/tickets', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsIndex'])->name('student.tickets.index');
         Route::get('/tickets/create', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsCreate'])->name('student.tickets.create');
         Route::post('/tickets', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsStore'])->name('student.tickets.store');
@@ -55,7 +65,7 @@ use App\Http\Controllers\StudentAffairsController;
 use App\Http\Controllers\FinancialAffairsController;
 use App\Http\Controllers\AdminController;
 
-Route::middleware(['auth', 'role:student_affairs,super_admin,admin,financial_affairs', 'scope'])->prefix('support')->name('staff.')->group(function () {
+Route::middleware(['auth', 'force.password:web', 'role:student_affairs,super_admin,admin,financial_affairs', 'scope'])->prefix('support')->name('staff.')->group(function () {
     Route::get('/tickets', [\App\Http\Controllers\SupportTicketStaffController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/{ticket}', [\App\Http\Controllers\SupportTicketStaffController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/reply', [\App\Http\Controllers\SupportTicketStaffController::class, 'reply'])->name('tickets.reply');
@@ -65,7 +75,11 @@ Route::middleware(['auth', 'role:student_affairs,super_admin,admin,financial_aff
     Route::post('/notifications/read-all', [\App\Http\Controllers\EmployeeNotificationController::class, 'readAll'])->name('notifications.read-all');
 });
 
-Route::middleware(['auth', 'role:student_affairs,super_admin,admin', 'scope'])->prefix('student-affairs')->name('affairs.student.')->group(function () {
+Route::middleware(['auth', 'force.password:web', 'role:student_affairs,super_admin,admin', 'scope'])->prefix('student-affairs')->name('affairs.student.')->group(function () {
+    Route::get('/export', [\App\Http\Controllers\ExportController::class, 'students'])->name('export');
+    Route::get('/students/{student}/card', [\App\Http\Controllers\StudentCardController::class, 'card'])->name('card');
+    Route::get('/students/{student}/print', [\App\Http\Controllers\StudentCardController::class, 'print'])->name('print');
+    Route::get('/students/{student}/qr', [\App\Http\Controllers\StudentCardController::class, 'qr'])->name('qr');
     Route::get('/', [StudentAffairsController::class, 'index'])->name('index');
     Route::get('/create', [StudentAffairsController::class, 'create'])->name('create');
     Route::post('/', [StudentAffairsController::class, 'store'])->name('store');
@@ -81,12 +95,12 @@ Route::middleware(['auth', 'role:student_affairs,super_admin,admin', 'scope'])->
     Route::post('/{student}/manual-pay', [StudentAffairsController::class, 'manualPay'])->name('manual-pay');
 });
 
-Route::middleware(['auth', 'role:financial_affairs,super_admin,admin', 'scope'])->prefix('financial-affairs')->name('affairs.financial.')->group(function () {
+Route::middleware(['auth', 'force.password:web', 'role:financial_affairs,super_admin,admin', 'scope'])->prefix('financial-affairs')->name('affairs.financial.')->group(function () {
     Route::get('/', [FinancialAffairsController::class, 'index'])->name('index'); // التسوية اليومية
     Route::get('/payments', [FinancialAffairsController::class, 'payments'])->name('payments'); // التقارير مفلترة
 });
 
-Route::middleware(['auth', 'role:super_admin,admin,financial_affairs,student_affairs,graduate_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'force.password:web', 'role:super_admin,admin,financial_affairs,student_affairs,graduate_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
     // Service Management
     Route::get('/services', [AdminController::class, 'services'])->name('services.index');
     Route::post('/services', [AdminController::class, 'storeService'])->name('services.store');
@@ -94,29 +108,35 @@ Route::middleware(['auth', 'role:super_admin,admin,financial_affairs,student_aff
     Route::patch('/services/{service}/toggle', [AdminController::class, 'toggleService'])->name('services.toggle');
 });
 
-Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'force.password:web', 'role:super_admin,admin,financial_affairs', 'scope'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
 
-    // Employee Management
-    Route::get('/employees', [AdminController::class, 'employees'])->name('employees.index');
-    Route::post('/employees', [AdminController::class, 'storeEmployee'])->name('employees.store');
-    Route::put('/employees/{user}', [AdminController::class, 'updateEmployee'])->name('employees.update');
-    Route::delete('/employees/{user}', [AdminController::class, 'deleteEmployee'])->name('employees.delete');
-    Route::patch('/employees/{user}/toggle', [AdminController::class, 'toggleEmployee'])->name('employees.toggle');
-
-    // Audit Log
-    Route::get('/audit-log', [AdminController::class, 'auditLog'])->name('audit.index');
-
-    // Refund Workflow
     Route::get('/refunds', [AdminController::class, 'refundQueue'])->name('refunds.index');
     Route::post('/refunds/{payment}/approve', [AdminController::class, 'approveRefund'])->name('refunds.approve');
     Route::post('/refunds/{payment}/process', [AdminController::class, 'processRefund'])->name('refunds.process');
     Route::post('/refunds/{payment}/request', [AdminController::class, 'requestRefund'])->name('refunds.request');
     Route::post('/payments/{payment}/cancel', [AdminController::class, 'cancelPayment'])->name('payments.cancel');
 
-    // Pending Review Queue
     Route::get('/review/pending', [AdminController::class, 'pendingQueue'])->name('review.pending');
     Route::post('/review/{payment}/mark-paid', [AdminController::class, 'markPaid'])->name('review.mark-paid');
+
+    Route::get('/audit-log', [AdminController::class, 'auditLog'])->name('audit.index');
+
+    Route::get('/export/payments', [App\Http\Controllers\ExportController::class, 'payments'])->name('export.payments');
+    Route::get('/export/daily-settlement', [App\Http\Controllers\ExportController::class, 'dailySettlement'])->name('export.daily');
+
+    Route::get('/statistics', [App\Http\Controllers\StatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/statistics/faculty/{faculty}', [App\Http\Controllers\StatisticsController::class, 'byFaculty'])->name('statistics.faculty');
+});
+
+Route::middleware(['auth', 'force.password:web', 'role:super_admin,admin', 'scope'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/login-activity', [\App\Http\Controllers\LoginActivityController::class, 'index'])->name('login-activity');
+    // Employee Management
+    Route::get('/employees', [AdminController::class, 'employees'])->name('employees.index');
+    Route::post('/employees', [AdminController::class, 'storeEmployee'])->name('employees.store');
+    Route::put('/employees/{user}', [AdminController::class, 'updateEmployee'])->name('employees.update');
+    Route::delete('/employees/{user}', [AdminController::class, 'deleteEmployee'])->name('employees.delete');
+    Route::patch('/employees/{user}/toggle', [AdminController::class, 'toggleEmployee'])->name('employees.toggle');
 
     // Financial Settings Panel
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
@@ -129,10 +149,6 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
 
     // Employee Permissions
     Route::post('/employees/{user}/permissions', [App\Http\Controllers\SettingsController::class, 'updatePermissions'])->name('employees.permissions');
-
-    // Export
-    Route::get('/export/payments', [App\Http\Controllers\ExportController::class, 'payments'])->name('export.payments');
-    Route::get('/export/daily-settlement', [App\Http\Controllers\ExportController::class, 'dailySettlement'])->name('export.daily');
 
     // ─── University Structure ───────────────────────────────────────────
     Route::get('/faculties', [App\Http\Controllers\FacultyController::class, 'index'])->name('faculties.index');
@@ -155,10 +171,6 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
     Route::post('/employees/{user}/assignment', [App\Http\Controllers\AdminAssignmentController::class, 'update'])->name('employees.assignment');
     Route::delete('/employees/{user}/assignment', [App\Http\Controllers\AdminAssignmentController::class, 'clear'])->name('employees.assignment.clear');
 
-    // ─── Statistics Dashboard ──────────────────────────────────────────
-    Route::get('/statistics', [App\Http\Controllers\StatisticsController::class, 'index'])->name('statistics.index');
-    Route::get('/statistics/faculty/{faculty}', [App\Http\Controllers\StatisticsController::class, 'byFaculty'])->name('statistics.faculty');
-
     Route::get('/announcements', [App\Http\Controllers\AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/create', [App\Http\Controllers\AnnouncementController::class, 'create'])->name('announcements.create');
     Route::post('/announcements', [App\Http\Controllers\AnnouncementController::class, 'store'])->name('announcements.store');
@@ -175,4 +187,17 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
     Route::post('/help-articles', [App\Http\Controllers\HelpArticleController::class, 'store'])->name('help.store');
     Route::put('/help-articles/{helpArticle}', [App\Http\Controllers\HelpArticleController::class, 'update'])->name('help.update');
     Route::delete('/help-articles/{helpArticle}', [App\Http\Controllers\HelpArticleController::class, 'destroy'])->name('help.destroy');
+});
+
+Route::middleware(['auth', 'force.password:web', 'role:super_admin,admin,financial_affairs,student_affairs', 'scope'])->prefix('reports')->name('reports.')->group(function () {
+    Route::get('/today', [\App\Http\Controllers\ReportsController::class, 'todaySummary'])->name('today');
+    Route::get('/monthly', [\App\Http\Controllers\ReportsController::class, 'monthlySummary'])->name('monthly');
+    Route::get('/delayed', [\App\Http\Controllers\ReportsController::class, 'delayed'])->name('delayed');
+    Route::get('/popular-services', [\App\Http\Controllers\ReportsController::class, 'popularServices'])->name('popular');
+    Route::get('/recent', [\App\Http\Controllers\ReportsController::class, 'recentActivities'])->name('recent');
+});
+
+Route::middleware(['auth', 'force.password:web', 'role:student_affairs,super_admin,admin,financial_affairs', 'scope'])->group(function () {
+    Route::post('/fulfillment/{payment}/start', [\App\Http\Controllers\FulfillmentController::class, 'start'])->name('fulfillment.start');
+    Route::post('/fulfillment/{payment}/complete', [\App\Http\Controllers\FulfillmentController::class, 'complete'])->name('fulfillment.complete');
 });

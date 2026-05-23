@@ -14,6 +14,10 @@ class Service extends Model
         'name',
         'type',
         'category',
+        'category_group',
+        'instructions',
+        'required_fields',
+        'estimated_days',
         'amount',
         'requires_subject',
         'sub_options',
@@ -24,10 +28,12 @@ class Service extends Model
     ];
 
     protected $casts = [
-        'sub_options'     => 'array',
-        'requires_subject'=> 'boolean',
-        'allows_quantity' => 'boolean',
-        'is_active'       => 'boolean',
+        'sub_options'      => 'array',
+        'required_fields'  => 'array',
+        'requires_subject' => 'boolean',
+        'allows_quantity'  => 'boolean',
+        'is_active'        => 'boolean',
+        'estimated_days'   => 'integer',
     ];
 
     public function faculty(): BelongsTo

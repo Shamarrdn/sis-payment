@@ -18,6 +18,8 @@ class User extends Authenticatable
         'role',
         'permissions',
         'is_active',
+        'must_change_password',
+        'last_login_at',
     ];
 
     protected $hidden = [
@@ -30,7 +32,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
-            'permissions'       => 'array',
+            'permissions'          => 'array',
+            'must_change_password' => 'boolean',
+            'last_login_at'        => 'datetime',
         ];
     }
 
@@ -40,8 +44,41 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
-        if ($this->role === 'super_admin') return true;
-        return in_array($permission, $this->permissions ?? []);
+        if ($this->role === 'super_admin') {
+            return true;
+        }
+
+        if ($this->role === 'financial_affairs') {
+            $defaults = [
+                'view_reports',
+                'edit_prices',
+                'approve_refunds',
+                'cancel_payments',
+                'manual_cash_entry',
+                'export_data',
+                'view_audit_log',
+            ];
+            if (in_array($permission, $defaults, true)) {
+                return true;
+            }
+        }
+
+        if ($this->role === 'admin') {
+            $defaults = [
+                'view_reports',
+                'approve_refunds',
+                'cancel_payments',
+                'manual_cash_entry',
+                'export_data',
+                'view_audit_log',
+                'manage_settings',
+            ];
+            if (in_array($permission, $defaults, true)) {
+                return true;
+            }
+        }
+
+        return in_array($permission, $this->permissions ?? [], true);
     }
 
     /**

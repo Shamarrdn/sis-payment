@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Services\LoginActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -43,6 +44,13 @@ class EmployeeAuthController extends Controller
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
+            $user->update(['last_login_at' => now()]);
+            LoginActivityLogger::log($request, 'web', true, $user->id, null, $user->email);
+
+            if ($user->must_change_password) {
+                return redirect()->route('employee.password.change');
+            }
+
             $role = $user->role;
 
             return match(true) {
@@ -54,6 +62,7 @@ class EmployeeAuthController extends Controller
             };
         }
 
+        LoginActivityLogger::log($request, 'web', false, null, null, $credentials['email'] ?? null);
         RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([
