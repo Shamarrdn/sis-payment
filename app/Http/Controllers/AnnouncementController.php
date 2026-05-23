@@ -65,7 +65,7 @@ class AnnouncementController extends Controller
                     'title' => 'إعلان جديد: ' . $announcement->title,
                     'message' => Str::limit(strip_tags($announcement->content), 100),
                     'announcement_id' => $announcement->id,
-                    'action_url' => route('student.dashboard'),
+                    'action_url' => route('student.announcements'),
                 ]));
             }
         }

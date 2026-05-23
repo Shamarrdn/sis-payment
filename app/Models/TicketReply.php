@@ -16,7 +16,7 @@ class TicketReply extends Model
 
     public function ticket(): BelongsTo
     {
-        return $this->belongsTo(SupportTicket::class);
+        return $this->belongsTo(SupportTicket::class, 'ticket_id');
     }
 
     public function user(): BelongsTo

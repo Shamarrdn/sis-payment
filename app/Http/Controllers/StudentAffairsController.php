@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Student;
+use App\Notifications\RequestStatusChanged;
 use App\Services\AuditLoggerService;
 use App\Services\ScopeService;
 
@@ -480,6 +481,17 @@ class StudentAffairsController extends Controller
         $student = $document->student;
         AuditLoggerService::log('Verify Document', $document, ['status' => $oldStatus], ['status' => $validated['status'], 'rejection_reason' => $validated['rejection_reason'] ?? null]);
 
+        $student->notify(new RequestStatusChanged([
+            'title'        => 'تحديث حالة مستند',
+            'message'      => $validated['status'] === 'verified'
+                ? 'تم اعتماد مستندك المرفوع'
+                : 'تم رفض مستندك — يرجى مراجعة الملف الشخصي',
+            'request_type' => 'document',
+            'request_id'   => $document->id,
+            'status'       => $validated['status'],
+            'action_url'   => route('student.profile'),
+        ]));
+
         return back()->with('success', 'تم تحديث حالة المستند بنجاح.');
     }
 
@@ -522,6 +534,17 @@ class StudentAffairsController extends Controller
                 'rejection_reason' => $validated['rejection_reason'],
             ]);
         }
+
+        $student->notify(new RequestStatusChanged([
+            'title'        => 'تحديث طلب تعديل البيانات',
+            'message'      => $validated['status'] === 'approved'
+                ? 'تم اعتماد طلب تعديل بياناتك الحساسة'
+                : 'تم رفض طلب تعديل بياناتك — ' . ($validated['rejection_reason'] ?? ''),
+            'request_type' => 'sensitive_data',
+            'request_id'   => $updateRequest->id,
+            'status'       => $validated['status'],
+            'action_url'   => route('student.profile'),
+        ]));
 
         return back()->with('success', $validated['status'] === 'approved' ? 'تم اعتماد تعديل البيانات الحساسة وتطبيقها بنجاح.' : 'تم رفض طلب تعديل البيانات الحساسة.');
     }

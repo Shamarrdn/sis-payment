@@ -23,6 +23,17 @@ class SupportTicket extends Model
 
     public function replies(): HasMany
     {
-        return $this->hasMany(TicketReply::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(TicketReply::class, 'ticket_id')->orderBy('created_at', 'asc');
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'open' => 'مفتوحة',
+            'in_progress' => 'قيد المعالجة',
+            'resolved' => 'تم الحل',
+            'closed' => 'مغلقة',
+            default => $status,
+        };
     }
 }

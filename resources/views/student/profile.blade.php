@@ -55,16 +55,7 @@
         </small>
     </div>
     <nav class="sidebar-nav">
-        <span class="nav-label">الخدمات</span>
-        <a href="{{ route('student.dashboard') }}" class="{{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid-fill"></i> الخدمات المتاحة
-        </a>
-        <a href="{{ route('student.history') }}" class="{{ request()->routeIs('student.history') ? 'active' : '' }}">
-            <i class="bi bi-archive-fill"></i> الأرشيف الرقمي
-        </a>
-        <a href="{{ route('student.profile') }}" class="{{ request()->routeIs('student.profile') ? 'active' : '' }}">
-            <i class="bi bi-pencil-square"></i> تكملة بياناتي
-        </a>
+        @include('student.partials.sidebar-nav')
     </nav>
     <div class="sidebar-footer">
         <form action="{{ route('student.logout') }}" method="POST">

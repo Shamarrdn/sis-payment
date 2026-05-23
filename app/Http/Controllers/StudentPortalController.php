@@ -8,7 +8,12 @@ use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use App\Models\Discount;
 use App\Models\Faculty;
+use App\Models\Announcement;
+use App\Notifications\NewPaymentOrDue;
+use App\Notifications\NewRequestSubmitted;
+use App\Notifications\RequestStatusChanged;
 use App\Services\PaymentGatewayService;
+use App\Services\StaffNotifier;
 use App\Services\TuitionResolverService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -130,6 +135,9 @@ class StudentPortalController extends Controller
         $unpaidCount = Payment::where('student_id', $student->id)->where('status', 'pending')->count();
         $recentPayments = Payment::where('student_id', $student->id)->with('service')->orderBy('payment_date', 'desc')->take(5)->get();
 
+        $announcements = Announcement::visibleToStudent($student)->latest()->take(3)->get();
+        $unreadNotifications = $student->unreadNotifications()->count();
+
         $iconMap = [
             'شئون طلاب' => [
                 'icon' => 'bi-person-badge-fill',
@@ -168,7 +176,7 @@ class StudentPortalController extends Controller
             ]
         ];
 
-        return view('student.dashboard', compact('services', 'mostUsed', 'paidFull', 'paidInst1', 'paidInst2', 'tuition', 'unpaidCount', 'recentPayments', 'resolution', 'iconMap'));
+        return view('student.dashboard', compact('services', 'mostUsed', 'paidFull', 'paidInst1', 'paidInst2', 'tuition', 'unpaidCount', 'recentPayments', 'resolution', 'iconMap', 'announcements', 'unreadNotifications'));
     }
 
     public function profile()
@@ -241,6 +249,18 @@ class StudentPortalController extends Controller
                     'requested_data' => $sensitiveChanges,
                     'rejection_reason' => null
                 ]
+            );
+
+            StaffNotifier::notifyRoles(
+                ['student_affairs', 'super_admin', 'admin'],
+                new NewRequestSubmitted([
+                    'title'        => 'طلب تعديل بيانات حساسة',
+                    'message'      => $student->name . ' — طلب تعديل بيانات حساسة',
+                    'student_name' => $student->name,
+                    'request_type' => 'sensitive_data',
+                    'request_id'   => $student->id,
+                    'action_url'   => route('affairs.student.show', $student),
+                ])
             );
 
             // Revert these fields from the immediate update array
@@ -392,7 +412,16 @@ class StudentPortalController extends Controller
         }
 
         if ($outcome['status'] === 'paid') {
-            return redirect()->route('student.receipt', $outcome['payment'])->with('success', 'تم سداد المصاريف بنجاح.');
+            $payment = $outcome['payment'];
+            $student->notify(new NewPaymentOrDue([
+                'title'            => 'تم سداد المصاريف الدراسية',
+                'message'          => 'تم تأكيد سداد المصاريف الدراسية',
+                'amount'           => $payment->total_amount,
+                'reference_number' => $payment->reference_number,
+                'action_url'       => route('student.receipt', $payment),
+            ]));
+
+            return redirect()->route('student.receipt', $payment)->with('success', 'تم سداد المصاريف بنجاح.');
         }
 
         return redirect()->route('student.history')->with('error', 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو التواصل مع الشؤون المالية.');
@@ -451,8 +480,18 @@ class StudentPortalController extends Controller
         }
 
         if ($outcome['status'] === 'paid') {
-            return redirect()->route('student.receipt', $outcome['payment'])
-                ->with('success', 'تم الدفع بنجاح عبر ' . $method . '. رقم الإيصال: ' . $outcome['payment']->reference_number);
+            $payment = $outcome['payment'];
+            $student->notify(new NewPaymentOrDue([
+                'title'            => 'تم تأكيد الدفع',
+                'message'          => 'تم سداد ' . ($service->name ?? 'الخدمة') . ' بنجاح',
+                'amount'           => $payment->total_amount,
+                'service_name'     => $service->name,
+                'reference_number' => $payment->reference_number,
+                'action_url'       => route('student.receipt', $payment),
+            ]));
+
+            return redirect()->route('student.receipt', $payment)
+                ->with('success', 'تم الدفع بنجاح عبر ' . $method . '. رقم الإيصال: ' . $payment->reference_number);
         }
 
         return redirect()->route('student.history')

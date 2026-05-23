@@ -98,16 +98,7 @@
         </small>
     </div>
     <nav class="sidebar-nav">
-        <span class="nav-label">الخدمات</span>
-        <a href="{{ route('student.dashboard') }}" class="{{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid-fill"></i> الخدمات المتاحة
-        </a>
-        <a href="{{ route('student.history') }}" class="{{ request()->routeIs('student.history') ? 'active' : '' }}">
-            <i class="bi bi-archive-fill"></i> الأرشيف الرقمي
-        </a>
-        <a href="{{ route('student.profile') }}" class="{{ request()->routeIs('student.profile') ? 'active' : '' }}">
-            <i class="bi bi-pencil-square"></i> تكملة بياناتي
-        </a>
+        @include('student.partials.sidebar-nav')
     </nav>
     <div class="sidebar-footer">
         <form action="{{ route('student.logout') }}" method="POST">
@@ -154,6 +145,30 @@
             <div class="alert alert-warning rounded-3 mb-4 d-flex justify-content-between align-items-center">
                 <div><i class="bi bi-exclamation-triangle-fill me-2"></i> لديك <strong>{{ $unpaidCount }}</strong> عملية دفع قيد الانتظار لم تكتمل بعد.</div>
                 <a href="{{ route('student.history') }}" class="btn btn-sm btn-outline-dark">عرض الأرشيف</a>
+            </div>
+        @endif
+
+        @if(isset($announcements) && $announcements->isNotEmpty())
+            <div class="card border-0 shadow-sm mb-4" style="border-right:4px solid var(--accent)!important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-megaphone-fill text-warning me-2"></i>إعلانات</h6>
+                        <a href="{{ route('student.announcements') }}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+                    </div>
+                    @foreach($announcements as $ann)
+                        <div class="mb-2 pb-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                            <strong>{{ $ann->title }}</strong>
+                            <p class="text-muted small mb-0">{{ Str::limit($ann->content, 100) }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if(isset($unreadNotifications) && $unreadNotifications > 0)
+            <div class="alert alert-info rounded-3 mb-4 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bell-fill me-2"></i> لديك {{ $unreadNotifications }} إشعار غير مقروء</span>
+                <a href="{{ route('student.notifications') }}" class="btn btn-sm btn-primary">عرض</a>
             </div>
         @endif
 

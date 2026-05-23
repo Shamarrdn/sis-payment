@@ -22,6 +22,9 @@
     <a href="{{ route('affairs.student.create') }}" class="{{ request()->routeIs('affairs.student.create') ? 'active' : '' }}">
         <i class="bi bi-person-plus-fill"></i> تسجيل طالب جديد
     </a>
+    <a href="{{ route('staff.tickets.index') }}" class="{{ request()->routeIs('staff.tickets.*') ? 'active' : '' }}">
+        <i class="bi bi-headset"></i> تذاكر الدعم
+    </a>
 @endif
 
 @if($user->role === 'financial_affairs' || $user->role === 'super_admin')
@@ -38,6 +41,22 @@
 @endif
 
 {{-- ─── System Admin Sections ─── --}}
+@if($user->role === 'super_admin' || $user->role === 'admin')
+    <span class="nav-label">التواصل مع الطلاب</span>
+    <a href="{{ route('admin.announcements.index') }}" class="{{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+        <i class="bi bi-megaphone-fill"></i> الإعلانات
+    </a>
+    <a href="{{ route('admin.faqs.index') }}" class="{{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}">
+        <i class="bi bi-question-circle-fill"></i> الأسئلة الشائعة
+    </a>
+    <a href="{{ route('admin.help.index') }}" class="{{ request()->routeIs('admin.help.*') ? 'active' : '' }}">
+        <i class="bi bi-book-fill"></i> مركز المساعدة
+    </a>
+    <a href="{{ route('staff.tickets.index') }}" class="{{ request()->routeIs('staff.tickets.*') ? 'active' : '' }}">
+        <i class="bi bi-headset"></i> تذاكر الدعم
+    </a>
+@endif
+
 @if($user->role === 'super_admin')
     <span class="nav-label">البنية التنظيمية</span>
     <a href="{{ route('admin.faculties.index') }}" class="{{ request()->routeIs('admin.faculties.*') ? 'active' : '' }}">

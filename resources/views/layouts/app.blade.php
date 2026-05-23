@@ -381,9 +381,20 @@
 <div class="main-content">
     <div class="top-header">
         <h5>@yield('page-heading', 'لوحة التحكم')</h5>
-        <div class="user-badge">
-            <div class="avatar"><i class="bi bi-person-fill"></i></div>
-            @yield('user-name', 'مرحباً')
+        <div class="d-flex align-items-center gap-3">
+            @auth
+                @php $staffUnread = auth()->user()->unreadNotifications()->count(); @endphp
+                <a href="{{ route('staff.notifications') }}" class="btn btn-light position-relative rounded-circle" style="width:40px;height:40px;" title="الإشعارات">
+                    <i class="bi bi-bell"></i>
+                    @if($staffUnread > 0)
+                        <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem;">{{ $staffUnread > 9 ? '9+' : $staffUnread }}</span>
+                    @endif
+                </a>
+            @endauth
+            <div class="user-badge">
+                <div class="avatar"><i class="bi bi-person-fill"></i></div>
+                @yield('user-name', 'مرحباً')
+            </div>
         </div>
     </div>
 
@@ -411,5 +422,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@stack('scripts')
 </body>
 </html>

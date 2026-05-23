@@ -33,6 +33,19 @@ Route::prefix('student')->group(function () {
         Route::post('/profile', [StudentPortalController::class, 'updateProfile'])->name('student.profile.update');
         Route::post('/profile/document', [StudentPortalController::class, 'uploadDocument'])->name('student.profile.document.upload');
         Route::post('/chat', [\App\Http\Controllers\ChatbotController::class, 'chat'])->name('student.chat');
+
+        Route::get('/announcements', [\App\Http\Controllers\StudentCommunicationController::class, 'announcements'])->name('student.announcements');
+        Route::get('/notifications', [\App\Http\Controllers\StudentCommunicationController::class, 'notifications'])->name('student.notifications');
+        Route::get('/notifications/{id}/read', [\App\Http\Controllers\StudentCommunicationController::class, 'markNotificationRead'])->name('student.notifications.read');
+        Route::post('/notifications/read-all', [\App\Http\Controllers\StudentCommunicationController::class, 'markAllNotificationsRead'])->name('student.notifications.read-all');
+        Route::get('/faq', [\App\Http\Controllers\StudentCommunicationController::class, 'faq'])->name('student.faq');
+        Route::get('/help', [\App\Http\Controllers\StudentCommunicationController::class, 'helpCenter'])->name('student.help');
+        Route::get('/requests', [\App\Http\Controllers\StudentCommunicationController::class, 'requestTracking'])->name('student.requests');
+        Route::get('/tickets', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsIndex'])->name('student.tickets.index');
+        Route::get('/tickets/create', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsCreate'])->name('student.tickets.create');
+        Route::post('/tickets', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsStore'])->name('student.tickets.store');
+        Route::get('/tickets/{ticket}', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsShow'])->name('student.tickets.show');
+        Route::post('/tickets/{ticket}/reply', [\App\Http\Controllers\StudentCommunicationController::class, 'ticketsReply'])->name('student.tickets.reply');
     });
 });
 
@@ -41,6 +54,16 @@ Route::get('/documents/{document}', [StudentPortalController::class, 'viewDocume
 use App\Http\Controllers\StudentAffairsController;
 use App\Http\Controllers\FinancialAffairsController;
 use App\Http\Controllers\AdminController;
+
+Route::middleware(['auth', 'role:student_affairs,super_admin,admin,financial_affairs', 'scope'])->prefix('support')->name('staff.')->group(function () {
+    Route::get('/tickets', [\App\Http\Controllers\SupportTicketStaffController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/{ticket}', [\App\Http\Controllers\SupportTicketStaffController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/reply', [\App\Http\Controllers\SupportTicketStaffController::class, 'reply'])->name('tickets.reply');
+    Route::patch('/tickets/{ticket}/status', [\App\Http\Controllers\SupportTicketStaffController::class, 'updateStatus'])->name('tickets.status');
+    Route::get('/notifications', [\App\Http\Controllers\EmployeeNotificationController::class, 'index'])->name('notifications');
+    Route::get('/notifications/{id}/read', [\App\Http\Controllers\EmployeeNotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\EmployeeNotificationController::class, 'readAll'])->name('notifications.read-all');
+});
 
 Route::middleware(['auth', 'role:student_affairs,super_admin,admin', 'scope'])->prefix('student-affairs')->name('affairs.student.')->group(function () {
     Route::get('/', [StudentAffairsController::class, 'index'])->name('index');
@@ -135,4 +158,21 @@ Route::middleware(['auth', 'role:super_admin,admin', 'scope'])->prefix('admin')-
     // ─── Statistics Dashboard ──────────────────────────────────────────
     Route::get('/statistics', [App\Http\Controllers\StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/statistics/faculty/{faculty}', [App\Http\Controllers\StatisticsController::class, 'byFaculty'])->name('statistics.faculty');
+
+    Route::get('/announcements', [App\Http\Controllers\AnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/announcements/create', [App\Http\Controllers\AnnouncementController::class, 'create'])->name('announcements.create');
+    Route::post('/announcements', [App\Http\Controllers\AnnouncementController::class, 'store'])->name('announcements.store');
+    Route::get('/announcements/{announcement}/edit', [App\Http\Controllers\AnnouncementController::class, 'edit'])->name('announcements.edit');
+    Route::put('/announcements/{announcement}', [App\Http\Controllers\AnnouncementController::class, 'update'])->name('announcements.update');
+    Route::delete('/announcements/{announcement}', [App\Http\Controllers\AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+
+    Route::get('/faqs', [App\Http\Controllers\FaqController::class, 'index'])->name('faqs.index');
+    Route::post('/faqs', [App\Http\Controllers\FaqController::class, 'store'])->name('faqs.store');
+    Route::put('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'update'])->name('faqs.update');
+    Route::delete('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'destroy'])->name('faqs.destroy');
+
+    Route::get('/help-articles', [App\Http\Controllers\HelpArticleController::class, 'index'])->name('help.index');
+    Route::post('/help-articles', [App\Http\Controllers\HelpArticleController::class, 'store'])->name('help.store');
+    Route::put('/help-articles/{helpArticle}', [App\Http\Controllers\HelpArticleController::class, 'update'])->name('help.update');
+    Route::delete('/help-articles/{helpArticle}', [App\Http\Controllers\HelpArticleController::class, 'destroy'])->name('help.destroy');
 });
