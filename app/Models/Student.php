@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Authenticatable
 {
-    use SoftDeletes;
+    use SoftDeletes, Notifiable;
 
     protected $fillable = [
         'name',
@@ -70,6 +71,11 @@ class Student extends Authenticatable
     public function internalNotes(): HasMany
     {
         return $this->hasMany(StudentNote::class)->latest();
+    }
+
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 
     /**
