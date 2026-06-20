@@ -112,12 +112,14 @@ class DatabaseSeeder extends Seeder
         );
 
         // 4. Create Sample Student
-        Student::create([
-            'name' => 'أحمد محمد',
-            'national_id' => '30001010101010',
-            'reference_number' => 'REF12345',
-            'academic_year' => 'الفرقة الثالثة',
-            'program' => 'علوم الحاسب',
-        ]);
+        Student::updateOrCreate(
+            ['national_id' => '30001010101010'],
+            [
+                'name' => 'أحمد محمد',
+                'reference_number' => 'REF12345',
+                'academic_year' => 'الفرقة الثالثة',
+                'program' => 'علوم الحاسب',
+            ]
+        );
     }
 }
